@@ -1,14 +1,612 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  TRIAGE
+  DOCTOR
+  LAB
+  PHARMACY
+}
+
+enum UserScope {
+  FACILITY_ONLY
+  CITY_WIDE
+}
+
+enum FacilityType {
+  MAIN
+  BARANGAY
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
+enum EncounterStatus {
+  WAIT_TRIAGE
+  TRIAGED
+  WAIT_DOCTOR
+  IN_CONSULT
+  FOR_LAB
+  FOR_PHARMACY
+  DONE
+  CANCELLED
+}
+
+enum LabOrderStatus {
+  PENDING
+  IN_PROGRESS
+  RELEASED
+  CANCELLED
+}
+
+enum InventoryTxnType {
+  IN
+  OUT
+  ADJUST
+  DISPENSE
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE_SOFT
+  ROLE_CHANGE
+  LOGIN
+  LOGOUT
+  UPLOAD
+  RELEASE
+  OVERRIDE
+}
+
+model Facility {
+  id       String       @id @default(uuid())
+  code     String       @unique
+  name     String
+  type     FacilityType
+  address  String?
+  isActive Boolean      @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("FacilityDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  users           User[]
+  encounters      Encounter[]
+  prescriptions   Prescription[]
+  dispenseTxns    DispenseTxn[]
+  inventoryLevels InventoryLevel[]
+  inventoryTxns   InventoryTxn[]
+  stockLots       StockLot[]
+
+  labOrdersRequested   LabOrder[]  @relation("LabOrderRequestedFacility")
+  labOrdersPerforming  LabOrder[]  @relation("LabOrderPerformingFacility")
+  labResultsPerforming LabResult[] @relation("LabResultPerformingFacility")
+
+  @@index([type])
+  @@index([isActive])
+}
+
+model User {
+  id           String  @id @default(uuid())
+  email        String  @unique
+  name         String
+  passwordHash String
+  role         Role
+  isActive     Boolean @default(true)
+
+  facilityId String
+  facility   Facility  @relation(fields: [facilityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  scope      UserScope @default(FACILITY_ONLY)
+
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  deletedAt    DateTime?
+  deletedById  String?
+  deletedBy    User?     @relation("UserDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+  deletedUsers User[]    @relation("UserDeletedBy")
+
+  auditLogs        AuditLog[]
+  encountersTriage Encounter[] @relation("EncounterTriageBy")
+  encountersDoctor Encounter[] @relation("EncounterDoctor")
+
+  prescriptionsCreated Prescription[] @relation("PrescriptionCreatedBy")
+  labOrdersRequested   LabOrder[]     @relation("LabOrderRequestedBy")
+  labOrdersPerformed   LabOrder[]     @relation("LabOrderPerformedBy")
+  labResultsUploaded   LabResult[]    @relation("LabResultUploadedBy")
+  labResultsReleased   LabResult[]    @relation("LabResultReleasedBy")
+
+  inventoryTxns InventoryTxn[]
+  dispenseTxns  DispenseTxn[]
+
+  // Inverse relations for "deletedBy" across models
+  facilityDeletedBy       Facility[]         @relation("FacilityDeletedBy")
+  patientDeletedBy        Patient[]          @relation("PatientDeletedBy")
+  encounterDeletedBy      Encounter[]        @relation("EncounterDeletedBy")
+  triageRecordDeletedBy   TriageRecord[]     @relation("TriageRecordDeletedBy")
+  diagnosisDeletedBy      Diagnosis[]        @relation("DiagnosisDeletedBy")
+  prescriptionDeletedBy   Prescription[]     @relation("PrescriptionDeletedBy")
+  rxItemDeletedBy         PrescriptionItem[] @relation("RxItemDeletedBy")
+  labOrderDeletedBy       LabOrder[]         @relation("LabOrderDeletedBy")
+  labResultDeletedBy      LabResult[]        @relation("LabResultDeletedBy")
+  medicineDeletedBy       Medicine[]         @relation("MedicineDeletedBy")
+  inventoryLevelDeletedBy InventoryLevel[]   @relation("InventoryLevelDeletedBy")
+  stockLotDeletedBy       StockLot[]         @relation("StockLotDeletedBy")
+  inventoryTxnDeletedBy   InventoryTxn[]     @relation("InventoryTxnDeletedBy")
+  dispenseTxnDeletedBy    DispenseTxn[]      @relation("DispenseTxnDeletedBy")
+
+  // Inverse relations for "createdBy" / "recordedBy"
+  diagnosisCreatedBy      Diagnosis[]    @relation("DiagnosisCreatedBy")
+  triageRecordsRecordedBy TriageRecord[] @relation("TriageRecordRecordedBy")
+
+  @@index([role])
+  @@index([isActive])
+  @@index([facilityId])
+  @@index([scope])
+}
+
+model Patient {
+  id           String  @id @default(uuid())
+  patientCode  String  @unique
+  PhilhealthNo String? @unique
+
+  firstName  String
+  middleName String?
+  lastName   String
+  birthDate  DateTime
+  sex        Sex      @default(UNKNOWN)
+
+  phone       String?
+  addressLine String?
+  barangay    String?
+  city        String? @default("Urdaneta City")
+  province    String? @default("Pangasinan")
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("PatientDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  encounters Encounter[]
+
+  @@index([lastName])
+  @@index([firstName])
+  @@index([birthDate])
+  @@index([phone])
+  @@index([lastName, firstName])
+}
+
+model Encounter {
+  id String @id @default(uuid())
+
+  facilityId String
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  status     EncounterStatus @default(WAIT_TRIAGE)
+  occurredAt DateTime        @default(now())
+
+  triageById String?
+  triageBy   User?   @relation("EncounterTriageBy", fields: [triageById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  doctorId String?
+  doctor   User?   @relation("EncounterDoctor", fields: [doctorId], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  chiefComplaint String?
+  triageNotes    String?
+
+  triageRecord  TriageRecord?
+  diagnoses     Diagnosis[]
+  prescriptions Prescription[]
+  labOrders     LabOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("EncounterDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  @@index([occurredAt])
+  @@index([status])
+  @@index([patientId])
+  @@index([facilityId])
+  @@index([facilityId, occurredAt])
+  @@index([patientId, occurredAt])
+}
+
+model TriageRecord {
+  id          String    @id @default(uuid())
+  encounterId String    @unique
+  encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  bpSystolic      Int?
+  bpDiastolic     Int?
+  heartRate       Int?
+  respiratoryRate Int?
+  temperatureC    Decimal? @db.Decimal(4, 2)
+  spo2            Int?
+  weightKg        Decimal? @db.Decimal(6, 2)
+  heightCm        Decimal? @db.Decimal(6, 2)
+
+  notes String?
+
+  recordedAt   DateTime @default(now())
+  recordedById String?
+  recordedBy   User?    @relation("TriageRecordRecordedBy", fields: [recordedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  updatedAt DateTime @updatedAt
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("TriageRecordDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  @@index([recordedAt])
+  @@index([recordedById])
+}
+
+model Diagnosis {
+  id          String    @id @default(uuid())
+  encounterId String
+  encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  text String
+
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   User?    @relation("DiagnosisCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  updatedAt DateTime @updatedAt
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("DiagnosisDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  @@index([encounterId])
+  @@index([createdAt])
+}
+
+model Prescription {
+  id String @id @default(uuid())
+
+  facilityId String
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  encounterId String
+  encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  notes String?
+
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   User?    @relation("PrescriptionCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  updatedAt DateTime @updatedAt
+
+  items        PrescriptionItem[]
+  dispenseTxns DispenseTxn[]
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("PrescriptionDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  @@index([facilityId])
+  @@index([encounterId])
+  @@index([createdAt])
+}
+
+model PrescriptionItem {
+  id             String       @id @default(uuid())
+  prescriptionId String
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  medicineId String?
+  medicine   Medicine? @relation(fields: [medicineId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  medicineName String
+  dosage       String?
+  frequency    String?
+  duration     String?
+  quantity     Int?
+  instructions String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dispenseItems DispenseItem[]
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("RxItemDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  @@index([prescriptionId])
+  @@index([medicineId])
+}
+
+model LabOrder {
+  id String @id @default(uuid())
+
+  encounterId String
+  encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  status LabOrderStatus @default(PENDING)
+
+  requestedFacilityId String
+  requestedFacility   Facility @relation("LabOrderRequestedFacility", fields: [requestedFacilityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  performingFacilityId String
+  performingFacility   Facility @relation("LabOrderPerformingFacility", fields: [performingFacilityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  requestedById String?
+  requestedBy   User?   @relation("LabOrderRequestedBy", fields: [requestedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  performedById String?
+  performedBy   User?   @relation("LabOrderPerformedBy", fields: [performedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  requestedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items   LabOrderItem[]
+  results LabResult[]
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("LabOrderDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  @@index([status])
+  @@index([requestedAt])
+  @@index([encounterId])
+  @@index([requestedFacilityId])
+  @@index([performingFacilityId])
+}
+
+model LabOrderItem {
+  id         String   @id @default(uuid())
+  labOrderId String
+  labOrder   LabOrder @relation(fields: [labOrderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  testCode String?
+  testName String
+  notes    String?
+
+  createdAt DateTime @default(now())
+
+  @@index([labOrderId])
+}
+
+model LabResult {
+  id String @id @default(uuid())
+
+  labOrderId String
+  labOrder   LabOrder @relation(fields: [labOrderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  performingFacilityId String
+  performingFacility   Facility @relation("LabResultPerformingFacility", fields: [performingFacilityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  fileUrl  String?
+  fileMime String?
+  fileName String?
+
+  values Json?
+
+  uploadedAt   DateTime @default(now())
+  uploadedById String?
+  uploadedBy   User?    @relation("LabResultUploadedBy", fields: [uploadedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  releasedAt   DateTime?
+  releasedById String?
+  releasedBy   User?     @relation("LabResultReleasedBy", fields: [releasedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  revisionOfId String?
+  revisionOf   LabResult?  @relation("LabResultRevision", fields: [revisionOfId], references: [id], onDelete: NoAction, onUpdate: Cascade)
+  revisions    LabResult[] @relation("LabResultRevision")
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("LabResultDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  @@index([labOrderId])
+  @@index([performingFacilityId])
+  @@index([uploadedAt])
+}
+
+model Medicine {
+  id       String  @id @default(uuid())
+  code     String? @unique
+  name     String
+  form     String?
+  strength String?
+  unit     String?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("MedicineDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  lots            StockLot[]
+  rxItems         PrescriptionItem[]
+  inventoryLevels InventoryLevel[]
+  inventoryTxns   InventoryTxn[]
+  dispenseItems   DispenseItem[]
+
+  @@index([name])
+  @@index([isActive])
+}
+
+model InventoryLevel {
+  id String @id @default(uuid())
+
+  facilityId String
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  medicineId String
+  medicine   Medicine @relation(fields: [medicineId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  quantity Int @default(0)
+
+  updatedAt DateTime @updatedAt
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("InventoryLevelDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  @@unique([facilityId, medicineId])
+  @@index([medicineId])
+  @@index([facilityId])
+}
+
+model StockLot {
+  id String @id @default(uuid())
+
+  facilityId String
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  medicineId String
+  medicine   Medicine @relation(fields: [medicineId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  lotNumber  String?
+  expiryDate DateTime?
+  quantity   Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("StockLotDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  txns          InventoryTxn[]
+  dispenseItems DispenseItem[]
+
+  @@index([facilityId])
+  @@index([medicineId])
+  @@index([expiryDate])
+  @@index([facilityId, medicineId])
+}
+
+model InventoryTxn {
+  id String @id @default(uuid())
+
+  facilityId String
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  type InventoryTxnType
+
+  medicineId String
+  medicine   Medicine @relation(fields: [medicineId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  stockLotId String?
+  stockLot   StockLot? @relation(fields: [stockLotId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  quantity Int
+  notes    String?
+
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("InventoryTxnDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  dispenseItems DispenseItem[]
+
+  @@index([facilityId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([medicineId])
+  @@index([stockLotId])
+}
+
+model DispenseTxn {
+  id String @id @default(uuid())
+
+  facilityId String
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  prescriptionId String
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  dispensedAt   DateTime @default(now())
+  dispensedById String?
+  dispensedBy   User?    @relation(fields: [dispensedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  notes String?
+
+  items DispenseItem[]
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("DispenseTxnDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  @@index([facilityId])
+  @@index([prescriptionId])
+  @@index([dispensedAt])
+}
+
+model DispenseItem {
+  id String @id @default(uuid())
+
+  dispenseTxnId String
+  dispenseTxn   DispenseTxn @relation(fields: [dispenseTxnId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  prescriptionItemId String
+  prescriptionItem   PrescriptionItem @relation(fields: [prescriptionItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  medicineId String?
+  medicine   Medicine? @relation(fields: [medicineId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  stockLotId String?
+  stockLot   StockLot? @relation(fields: [stockLotId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  quantity Int
+
+  inventoryTxnId String?
+  inventoryTxn   InventoryTxn? @relation(fields: [inventoryTxnId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([dispenseTxnId])
+  @@index([prescriptionItemId])
+  @@index([medicineId])
+  @@index([stockLotId])
+}
+
+model AuditLog {
+  id     String  @id @default(uuid())
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  action   AuditAction
+  entity   String
+  entityId String
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([entity, entityId])
 }
