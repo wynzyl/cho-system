@@ -162,7 +162,7 @@ model User {
 model Patient {
   id           String  @id @default(uuid())
   patientCode  String  @unique
-  PhilhealthNo String? @unique
+  philhealthNo String? @unique @map("PhilhealthNo")
 
   firstName  String
   middleName String?
@@ -598,6 +598,10 @@ model AuditLog {
   id     String  @id @default(uuid())
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  // Denormalized user fields to preserve attribution after user deletion
+  userName  String?
+  userEmail String?
 
   action   AuditAction
   entity   String
