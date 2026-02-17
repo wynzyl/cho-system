@@ -130,8 +130,8 @@ model User {
   labResultsUploaded   LabResult[]    @relation("LabResultUploadedBy")
   labResultsReleased   LabResult[]    @relation("LabResultReleasedBy")
 
-  inventoryTxns InventoryTxn[]
-  dispenseTxns  DispenseTxn[]
+  inventoryTxnsCreated  InventoryTxn[] @relation("InventoryTxnCreatedBy")
+  dispenseTxnsDispensed DispenseTxn[]  @relation("DispenseTxnDispensedBy")
 
   // Inverse relations for "deletedBy" across models
   facilityDeletedBy       Facility[]         @relation("FacilityDeletedBy")
@@ -527,7 +527,7 @@ model InventoryTxn {
 
   createdAt   DateTime @default(now())
   createdById String?
-  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+  createdBy   User?    @relation("InventoryTxnCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: Cascade)
 
   deletedAt   DateTime?
   deletedById String?
@@ -553,7 +553,7 @@ model DispenseTxn {
 
   dispensedAt   DateTime @default(now())
   dispensedById String?
-  dispensedBy   User?    @relation(fields: [dispensedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+  dispensedBy   User?    @relation("DispenseTxnDispensedBy", fields: [dispensedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
 
   notes String?
 
