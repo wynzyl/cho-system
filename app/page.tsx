@@ -1,8 +1,24 @@
+import { getSession } from "@/lib/auth"
+import { redirect } from "next/navigation"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
-const Page = () => {
+export default async function HomePage() {
+  const session = await getSession()
+
+  if (session) {
+    redirect("/dashboard")
+  }
+
   return (
-    <div>Home</div>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4">
+      <h1 className="text-3xl font-bold mb-2">CHO System</h1>
+      <p className="text-muted-foreground mb-6">
+        City Health Office Management System
+      </p>
+      <Button asChild>
+        <Link href="/login">Sign In</Link>
+      </Button>
+    </div>
   )
 }
-
-export default Page
