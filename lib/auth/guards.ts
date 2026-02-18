@@ -3,6 +3,22 @@ import { getSession } from "./session"
 import { SessionUser } from "./types"
 import { Role } from "@prisma/client"
 
+export type AuthErrorCode = "UNAUTHORIZED" | "FORBIDDEN"
+
+export class AuthError extends Error {
+  readonly code: AuthErrorCode
+
+  constructor(code: AuthErrorCode) {
+    super(code)
+    this.name = "AuthError"
+    this.code = code
+  }
+}
+
+function hasAdminBypass(role: Role): boolean {
+  return role === "ADMIN"
+}
+
 export async function requireSession(): Promise<SessionUser> {
   const session = await getSession()
   if (!session) {
@@ -14,8 +30,7 @@ export async function requireSession(): Promise<SessionUser> {
 export async function requireRole(allowedRoles: Role[]): Promise<SessionUser> {
   const session = await requireSession()
 
-  // ADMIN always has access
-  if (session.role === "ADMIN") {
+  if (hasAdminBypass(session.role)) {
     return session
   }
 
@@ -30,7 +45,7 @@ export async function requireRole(allowedRoles: Role[]): Promise<SessionUser> {
 export async function requireSessionForAction(): Promise<SessionUser> {
   const session = await getSession()
   if (!session) {
-    throw new Error("UNAUTHORIZED")
+    throw new AuthError("UNAUTHORIZED")
   }
   return session
 }
@@ -40,12 +55,12 @@ export async function requireRoleForAction(
 ): Promise<SessionUser> {
   const session = await requireSessionForAction()
 
-  if (session.role === "ADMIN") {
+  if (hasAdminBypass(session.role)) {
     return session
   }
 
   if (!allowedRoles.includes(session.role)) {
-    throw new Error("FORBIDDEN")
+    throw new AuthError("FORBIDDEN")
   }
 
   return session

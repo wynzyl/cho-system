@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { verifyPassword, createSession } from "@/lib/auth"
 import { loginSchema, type LoginInput } from "@/lib/validators/auth"
 import type { ActionResult } from "@/lib/auth/types"
+import { ROLE_ROUTES } from "@/lib/auth/routes"
 
 export async function loginAction(
   data: LoginInput
@@ -31,6 +32,10 @@ export async function loginAction(
 
   const { email, password } = parsed.data
 
+  // Dummy hash for timing-safe comparison when user not found
+  // Generated with bcrypt.hash("dummy", 10)
+  const DUMMY_HASH = "$2b$10$N9qo8uLOickgx2ZMRZoMy.MqrqzqzqzqzqzqzqzqzqzqzqzqzqzqW"
+
   // Find user
   const user = await db.user.findFirst({
     where: {
@@ -40,7 +45,11 @@ export async function loginAction(
     },
   })
 
-  if (!user) {
+  // Always perform password verification to prevent timing attacks
+  const hashToCompare = user?.passwordHash ?? DUMMY_HASH
+  const validPassword = await verifyPassword(password, hashToCompare)
+
+  if (!user || !validPassword) {
     return {
       ok: false,
       error: {
@@ -50,46 +59,36 @@ export async function loginAction(
     }
   }
 
-  // Verify password
-  const validPassword = await verifyPassword(password, user.passwordHash)
-  if (!validPassword) {
+  // Create session first - if this fails, we haven't modified any data
+  try {
+    await createSession({
+      id: user.id,
+      role: user.role,
+      name: user.name,
+      facilityId: user.facilityId,
+      scope: user.scope,
+    })
+  } catch (error) {
+    console.error("Failed to create session:", error)
     return {
       ok: false,
       error: {
-        code: "INVALID_CREDENTIALS",
-        message: "Invalid credentials",
+        code: "SESSION_ERROR",
+        message: "Login failed. Please try again.",
       },
     }
   }
 
-  // Update last login
+  // Update last login only after session is successfully created
   await db.user.update({
     where: { id: user.id },
     data: { lastLoginAt: new Date() },
   })
 
-  // Create session
-  await createSession({
-    id: user.id,
-    role: user.role,
-    name: user.name,
-    facilityId: user.facilityId,
-    scope: user.scope,
-  })
-
-  // Determine redirect based on role
-  const roleRoutes: Record<string, string> = {
-    ADMIN: "/dashboard",
-    TRIAGE: "/dashboard/triage",
-    DOCTOR: "/dashboard/doctor",
-    LAB: "/dashboard/laboratory",
-    PHARMACY: "/dashboard/pharmacy",
-  }
-
   return {
     ok: true,
     data: {
-      redirectTo: roleRoutes[user.role] ?? "/dashboard",
+      redirectTo: ROLE_ROUTES[user.role] ?? "/dashboard",
     },
   }
 }

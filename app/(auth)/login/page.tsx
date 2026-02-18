@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card"
 import { getSession } from "@/lib/auth"
 import { redirect } from "next/navigation"
+import { ROLE_ROUTES } from "@/lib/auth/routes"
 
 export const metadata = {
   title: "Login - CHO System",
@@ -18,7 +19,7 @@ export default async function LoginPage() {
   // Redirect if already logged in
   const session = await getSession()
   if (session) {
-    redirect("/dashboard")
+    redirect(ROLE_ROUTES[session.role] ?? "/dashboard")
   }
 
   return (

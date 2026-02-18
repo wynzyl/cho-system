@@ -18,6 +18,7 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
+    setError: setFieldError,
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -27,13 +28,30 @@ export function LoginForm() {
     setIsLoading(true)
     setError(null)
 
-    const result = await loginAction(data)
+    try {
+      const result = await loginAction(data)
 
-    if (result.ok) {
-      router.push(result.data.redirectTo)
-      router.refresh()
-    } else {
-      setError(result.error.message)
+      if (result.ok) {
+        router.push(result.data.redirectTo)
+        router.refresh()
+      } else {
+        // Handle server-side field validation errors
+        if (result.error.code === "VALIDATION_ERROR" && result.error.fieldErrors) {
+          for (const [field, messages] of Object.entries(result.error.fieldErrors)) {
+            if (messages && messages.length > 0) {
+              setFieldError(field as keyof LoginInput, {
+                type: "server",
+                message: messages[0],
+              })
+            }
+          }
+        } else {
+          setError(result.error.message)
+        }
+      }
+    } catch {
+      setError("An unexpected error occurred. Please try again.")
+    } finally {
       setIsLoading(false)
     }
   }

@@ -1,4 +1,11 @@
 import { requireRole } from "@/lib/auth"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 export default async function PharmacyDashboardPage() {
   const session = await requireRole(["PHARMACY"])
@@ -10,24 +17,24 @@ export default async function PharmacyDashboardPage() {
         Welcome, {session.name}
       </p>
       <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-lg border bg-card p-6">
-          <h3 className="font-semibold">To Dispense</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Prescriptions ready for dispensing
-          </p>
-        </div>
-        <div className="rounded-lg border bg-card p-6">
-          <h3 className="font-semibold">Inventory</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Stock management
-          </p>
-        </div>
-        <div className="rounded-lg border bg-card p-6">
-          <h3 className="font-semibold">Low Stock Alerts</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Items needing reorder
-          </p>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>To Dispense</CardTitle>
+            <CardDescription>Prescriptions ready for dispensing</CardDescription>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Inventory</CardTitle>
+            <CardDescription>Stock management</CardDescription>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Low Stock Alerts</CardTitle>
+            <CardDescription>Items needing reorder</CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     </div>
   )

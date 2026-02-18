@@ -1,32 +1,13 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { jwtVerify } from "jose"
-
-const SESSION_COOKIE_NAME = "cho-session"
+import { SESSION_COOKIE_NAME, getSecretKey } from "@/lib/auth/session"
+import { ROLE_ALLOWED_PATHS } from "@/lib/auth/routes"
 
 const publicPaths = ["/login", "/"]
 
-const roleRoutes: Record<string, string[]> = {
-  ADMIN: [
-    "/dashboard",
-    "/dashboard/triage",
-    "/dashboard/doctor",
-    "/dashboard/laboratory",
-    "/dashboard/pharmacy",
-  ],
-  TRIAGE: ["/dashboard", "/dashboard/triage"],
-  DOCTOR: ["/dashboard", "/dashboard/doctor"],
-  LAB: ["/dashboard", "/dashboard/laboratory"],
-  PHARMACY: ["/dashboard", "/dashboard/pharmacy"],
-}
-
-function getSecretKey(): Uint8Array {
-  const secret = process.env.SESSION_SECRET
-  if (!secret) {
-    throw new Error("SESSION_SECRET environment variable is not set")
-  }
-  return new TextEncoder().encode(secret)
-}
+// Known static file extensions that should bypass auth
+const STATIC_EXTENSIONS = [".ico", ".png", ".jpg", ".jpeg", ".svg", ".css", ".js", ".woff", ".woff2"]
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -36,12 +17,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Allow static files and Next.js internals
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api/") ||
-    pathname.includes(".")
-  ) {
+  // Allow Next.js internals and API routes
+  if (pathname.startsWith("/_next") || pathname.startsWith("/api/")) {
+    return NextResponse.next()
+  }
+
+  // Allow known static file extensions
+  if (STATIC_EXTENSIONS.some((ext) => pathname.endsWith(ext))) {
     return NextResponse.next()
   }
 
@@ -63,12 +45,17 @@ export async function proxy(request: NextRequest) {
 
     // Check role-based access for dashboard routes
     if (pathname.startsWith("/dashboard")) {
-      const allowedPaths = roleRoutes[role] ?? []
+      // ADMIN has access to all dashboard routes
+      if (role === "ADMIN") {
+        return NextResponse.next()
+      }
+
+      const allowedPaths = ROLE_ALLOWED_PATHS[role as keyof typeof ROLE_ALLOWED_PATHS] ?? []
       const hasAccess = allowedPaths.some(
         (path) => pathname === path || pathname.startsWith(path + "/")
       )
 
-      if (!hasAccess && role !== "ADMIN") {
+      if (!hasAccess) {
         return NextResponse.redirect(new URL("/unauthorized", request.url))
       }
     }

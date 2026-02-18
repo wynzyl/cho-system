@@ -9,7 +9,7 @@ export default function UnauthorizedPage() {
         You do not have permission to access this page.
       </p>
       <Button asChild>
-        <Link href="/dashboard">Return to Dashboard</Link>
+        <Link href="/">Return to Dashboard</Link>
       </Button>
     </div>
   )

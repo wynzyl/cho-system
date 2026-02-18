@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { cn } from "@/lib/utils/index"
+import { cn } from "@/lib/utils"
 
 function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -28,9 +28,15 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+type HeadingElement = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "div" | "span"
+
+interface CardTitleProps extends React.HTMLAttributes<HTMLElement> {
+  as?: HeadingElement
+}
+
+function CardTitle({ className, as: Component = "h3", ...props }: CardTitleProps) {
   return (
-    <div
+    <Component
       data-slot="card-title"
       className={cn("leading-none font-semibold", className)}
       {...props}

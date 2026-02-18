@@ -1,19 +1,18 @@
 import { requireSession } from "@/lib/auth"
 import { redirect } from "next/navigation"
+import { ROLE_ROUTES } from "@/lib/auth/routes"
+
+// Admin lands on triage by default when visiting /dashboard
+const DASHBOARD_LANDING: Record<string, string> = {
+  ...ROLE_ROUTES,
+  ADMIN: "/dashboard/triage",
+}
 
 export default async function DashboardPage() {
   const session = await requireSession()
 
   // Redirect to role-specific dashboard
-  const roleRoutes: Record<string, string> = {
-    ADMIN: "/dashboard/triage", // Admin lands on triage by default
-    TRIAGE: "/dashboard/triage",
-    DOCTOR: "/dashboard/doctor",
-    LAB: "/dashboard/laboratory",
-    PHARMACY: "/dashboard/pharmacy",
-  }
-
-  const targetRoute = roleRoutes[session.role]
+  const targetRoute = DASHBOARD_LANDING[session.role]
   if (targetRoute && targetRoute !== "/dashboard") {
     redirect(targetRoute)
   }
