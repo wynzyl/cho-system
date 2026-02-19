@@ -41,7 +41,7 @@ const prisma = new PrismaClient({ adapter })
 
 ## Roles & Access Control
 
-Five roles: ADMIN, TRIAGE, DOCTOR, LAB, PHARMACY
+Six roles: ADMIN, REGISTRATION, TRIAGE, DOCTOR, LAB, PHARMACY
 
 - ADMIN can access everything
 - Each role has specific capabilities (see docs/RBAC_POLICY.md)
@@ -94,6 +94,7 @@ import { AuthError, AuthErrorCode } from "@/lib/auth/guards"
 
 All use password: `Password123!`
 - admin@cho.local (ADMIN)
+- registration@cho.local (REGISTRATION)
 - doctor.main@cho.local (DOCTOR)
 - triage.main@cho.local (TRIAGE)
 - lab@cho.local (LAB)

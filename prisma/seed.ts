@@ -172,6 +172,19 @@ async function main() {
     },
   })
 
+  // REGISTRATION
+  await prisma.user.create({
+    data: {
+      name: "Registration Staff",
+      email: "registration@cho.local",
+      passwordHash: defaultPasswordHash,
+      role: "REGISTRATION",
+      scope: "FACILITY_ONLY",
+      facilityId: mainFacility.id,
+      isActive: true,
+    },
+  })
+
   console.log("Seeding completed successfully.")
 }
 

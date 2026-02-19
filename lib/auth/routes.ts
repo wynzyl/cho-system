@@ -6,6 +6,7 @@ import { Role } from "@prisma/client"
  */
 export const ROLE_ROUTES: Record<Role, string> = {
   ADMIN: "/dashboard",
+  REGISTRATION: "/dashboard/registration",
   TRIAGE: "/dashboard/triage",
   DOCTOR: "/dashboard/doctor",
   LAB: "/dashboard/laboratory",
@@ -19,11 +20,13 @@ export const ROLE_ROUTES: Record<Role, string> = {
 export const ROLE_ALLOWED_PATHS: Record<Role, string[]> = {
   ADMIN: [
     "/dashboard",
+    "/dashboard/registration",
     "/dashboard/triage",
     "/dashboard/doctor",
     "/dashboard/laboratory",
     "/dashboard/pharmacy",
   ],
+  REGISTRATION: ["/dashboard", "/dashboard/registration"],
   TRIAGE: ["/dashboard", "/dashboard/triage"],
   DOCTOR: ["/dashboard", "/dashboard/doctor"],
   LAB: ["/dashboard", "/dashboard/laboratory"],

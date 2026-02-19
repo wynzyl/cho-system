@@ -8,6 +8,7 @@ datasource db {
 
 enum Role {
   ADMIN
+  REGISTRATION
   TRIAGE
   DOCTOR
   LAB
