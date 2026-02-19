@@ -26,16 +26,25 @@ export default function PatientsPage() {
   const [pageSize, setPageSize] = useState(25)
   const [query, setQuery] = useState(searchParams.get("q") ?? "")
   const [searchInput, setSearchInput] = useState(query)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [encounterError, setEncounterError] = useState<string | null>(null)
 
   const canEdit = session?.role === "REGISTRATION" || session?.role === "ADMIN"
   const canStartEncounter = session?.role === "REGISTRATION" || session?.role === "ADMIN"
 
   const fetchPatients = useCallback(() => {
     startTransition(async () => {
-      const result = await searchPatientsAction({ query, page, pageSize })
-      if (result.ok) {
-        setPatients(result.data.patients)
-        setTotal(result.data.total)
+      try {
+        const result = await searchPatientsAction({ query, page, pageSize })
+        if (result.ok) {
+          setPatients(result.data.patients)
+          setTotal(result.data.total)
+          setFetchError(null)
+        } else {
+          setFetchError(result.error.message || "Failed to load patients")
+        }
+      } catch {
+        setFetchError("Failed to load patients")
       }
     })
   }, [query, page, pageSize])
@@ -61,10 +70,13 @@ export default function PatientsPage() {
 
   const handleStartEncounter = async (patientId: string) => {
     setIsStartingEncounter(true)
+    setEncounterError(null)
     try {
       const result = await createEncounterAction({ patientId })
       if (result.ok) {
         router.push(`/patients/${patientId}`)
+      } else {
+        setEncounterError(result.error.message || "Failed to start encounter")
       }
     } finally {
       setIsStartingEncounter(false)
@@ -82,6 +94,18 @@ export default function PatientsPage() {
           </Button>
         )}
       </div>
+
+      {fetchError && (
+        <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+          {fetchError}
+        </div>
+      )}
+
+      {encounterError && (
+        <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+          {encounterError}
+        </div>
+      )}
 
       <form onSubmit={handleSearch} className="flex gap-2">
         <div className="relative flex-1">

@@ -132,7 +132,11 @@ export function PatientForm({
               })
             }
           }
-        } else if (patientId) {
+        } else if (mode === "edit") {
+          if (!patientId) {
+            setError("Cannot update patient: missing patient ID")
+            return
+          }
           const result = await updatePatientAction(patientId, actionData)
           if (result.ok) {
             if (onSuccess) {

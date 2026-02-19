@@ -1,10 +1,16 @@
 import { db } from "@/lib/db"
+import type { Prisma } from "@prisma/client"
 
-export async function generatePatientCode(): Promise<string> {
+type TransactionClient = Prisma.TransactionClient
+
+export async function generatePatientCode(
+  tx?: TransactionClient
+): Promise<string> {
+  const client = tx ?? db
   const year = new Date().getFullYear()
   const prefix = `CHO-${year}-`
 
-  const lastPatient = await db.patient.findFirst({
+  const lastPatient = await client.patient.findFirst({
     where: { patientCode: { startsWith: prefix } },
     orderBy: { patientCode: "desc" },
     select: { patientCode: true },

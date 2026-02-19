@@ -33,33 +33,38 @@ export async function createPatientAction(
   }
 
   const data = parsed.data
-  const patientCode = await generatePatientCode()
 
-  const patient = await db.patient.create({
-    data: {
-      patientCode,
-      firstName: data.firstName,
-      middleName: data.middleName,
-      lastName: data.lastName,
-      birthDate: data.birthDate,
-      sex: data.sex,
-      phone: data.phone,
-      philhealthNo: data.philhealthNo,
-      addressLine: data.addressLine,
-      barangayId: data.barangayId,
-      notes: data.notes,
-    },
-  })
+  const patient = await db.$transaction(async (tx) => {
+    const patientCode = await generatePatientCode(tx)
 
-  await db.auditLog.create({
-    data: {
-      userId: session.userId,
-      userName: session.name,
-      action: "CREATE",
-      entity: "Patient",
-      entityId: patient.id,
-      metadata: { patientCode: patient.patientCode },
-    },
+    const newPatient = await tx.patient.create({
+      data: {
+        patientCode,
+        firstName: data.firstName,
+        middleName: data.middleName,
+        lastName: data.lastName,
+        birthDate: data.birthDate,
+        sex: data.sex,
+        phone: data.phone,
+        philhealthNo: data.philhealthNo,
+        addressLine: data.addressLine,
+        barangayId: data.barangayId,
+        notes: data.notes,
+      },
+    })
+
+    await tx.auditLog.create({
+      data: {
+        userId: session.userId,
+        userName: session.name,
+        action: "CREATE",
+        entity: "Patient",
+        entityId: newPatient.id,
+        metadata: { patientCode: newPatient.patientCode },
+      },
+    })
+
+    return newPatient
   })
 
   return {

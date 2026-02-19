@@ -4,7 +4,7 @@ import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { searchPatientsSchema, type SearchPatientsInput } from "@/lib/validators/patient"
 import type { ActionResult } from "@/lib/auth/types"
-import { Patient, Sex } from "@prisma/client"
+import { Sex } from "@prisma/client"
 
 export type PatientSearchResult = {
   id: string

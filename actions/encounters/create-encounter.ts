@@ -38,28 +38,32 @@ export async function createEncounterAction(
     }
   }
 
-  const encounter = await db.encounter.create({
-    data: {
-      patientId,
-      facilityId: session.facilityId,
-      status: "WAIT_TRIAGE",
-      occurredAt: new Date(),
-    },
-  })
-
-  await db.auditLog.create({
-    data: {
-      userId: session.userId,
-      userName: session.name,
-      action: "CREATE",
-      entity: "Encounter",
-      entityId: encounter.id,
-      metadata: {
+  const encounter = await db.$transaction(async (tx) => {
+    const newEncounter = await tx.encounter.create({
+      data: {
         patientId,
-        patientCode: patient.patientCode,
+        facilityId: session.facilityId,
         status: "WAIT_TRIAGE",
+        occurredAt: new Date(),
       },
-    },
+    })
+
+    await tx.auditLog.create({
+      data: {
+        userId: session.userId,
+        userName: session.name,
+        action: "CREATE",
+        entity: "Encounter",
+        entityId: newEncounter.id,
+        metadata: {
+          patientId,
+          patientCode: patient.patientCode,
+          status: "WAIT_TRIAGE",
+        },
+      },
+    })
+
+    return newEncounter
   })
 
   return {

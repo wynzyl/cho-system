@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import {
   Table,
   TableBody,
@@ -74,19 +73,22 @@ export function PatientDetailView({
 }: PatientDetailViewProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const [encounterError, setEncounterError] = useState<string | null>(null)
 
   const handleStartEncounter = () => {
+    setEncounterError(null)
     startTransition(async () => {
       const result = await createEncounterAction({ patientId: patient.id })
       if (result.ok) {
         router.refresh()
+      } else {
+        setEncounterError(result.error.message || "Failed to start encounter")
       }
     })
   }
 
   const handleEditSuccess = () => {
     router.push(`/patients/${patient.id}`)
-    router.refresh()
   }
 
   if (isEditMode) {
@@ -141,14 +143,19 @@ export function PatientDetailView({
             </Button>
           )}
           {canStartEncounter && (
-            <Button onClick={handleStartEncounter} disabled={isPending}>
-              {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <PlayCircle className="mr-2 h-4 w-4" />
+            <div className="flex flex-col items-end gap-1">
+              <Button onClick={handleStartEncounter} disabled={isPending}>
+                {isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <PlayCircle className="mr-2 h-4 w-4" />
+                )}
+                Start Encounter
+              </Button>
+              {encounterError && (
+                <p className="text-sm text-destructive">{encounterError}</p>
               )}
-              Start Encounter
-            </Button>
+            </div>
           )}
         </div>
       </div>

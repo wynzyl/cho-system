@@ -184,7 +184,7 @@ model Patient {
   middleName String?
   lastName   String
   birthDate  DateTime
-  sex        Sex      @default(MALE)
+  sex        Sex      @default(UNKNOWN)
 
   phone       String?
   addressLine String?

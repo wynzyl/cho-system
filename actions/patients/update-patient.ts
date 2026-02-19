@@ -42,11 +42,48 @@ export async function updatePatientAction(
     }
   }
 
-  const existing = await db.patient.findFirst({
-    where: { id: patientId, deletedAt: null },
+  const data = parsed.data
+
+  const result = await db.$transaction(async (tx) => {
+    const existing = await tx.patient.findFirst({
+      where: { id: patientId, deletedAt: null },
+    })
+
+    if (!existing) {
+      return { found: false as const }
+    }
+
+    const patient = await tx.patient.update({
+      where: { id: patientId },
+      data: {
+        firstName: data.firstName,
+        middleName: data.middleName,
+        lastName: data.lastName,
+        birthDate: data.birthDate,
+        sex: data.sex,
+        phone: data.phone,
+        philhealthNo: data.philhealthNo,
+        addressLine: data.addressLine,
+        barangayId: data.barangayId,
+        notes: data.notes,
+      },
+    })
+
+    await tx.auditLog.create({
+      data: {
+        userId: session.userId,
+        userName: session.name,
+        action: "UPDATE",
+        entity: "Patient",
+        entityId: patient.id,
+        metadata: { patientCode: patient.patientCode },
+      },
+    })
+
+    return { found: true as const, patient }
   })
 
-  if (!existing) {
+  if (!result.found) {
     return {
       ok: false,
       error: {
@@ -56,36 +93,8 @@ export async function updatePatientAction(
     }
   }
 
-  const data = parsed.data
-  const patient = await db.patient.update({
-    where: { id: patientId },
-    data: {
-      firstName: data.firstName,
-      middleName: data.middleName,
-      lastName: data.lastName,
-      birthDate: data.birthDate,
-      sex: data.sex,
-      phone: data.phone,
-      philhealthNo: data.philhealthNo,
-      addressLine: data.addressLine,
-      barangayId: data.barangayId,
-      notes: data.notes,
-    },
-  })
-
-  await db.auditLog.create({
-    data: {
-      userId: session.userId,
-      userName: session.name,
-      action: "UPDATE",
-      entity: "Patient",
-      entityId: patient.id,
-      metadata: { patientCode: patient.patientCode },
-    },
-  })
-
   return {
     ok: true,
-    data: patient,
+    data: result.patient,
   }
 }
