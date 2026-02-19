@@ -175,10 +175,11 @@ async function main() {
   // REGISTRATION
   await prisma.user.create({
     data: {
-      name: "Reg Clerk Garcia",
+      name: "Registration Staff",
       email: "registration@cho.local",
       passwordHash: defaultPasswordHash,
       role: "REGISTRATION",
+      scope: "FACILITY_ONLY",
       facilityId: mainFacility.id,
       isActive: true,
     },
