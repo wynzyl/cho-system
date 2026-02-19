@@ -25,6 +25,7 @@ export const ROLE_ALLOWED_PATHS: Record<Role, string[]> = {
     "/dashboard/doctor",
     "/dashboard/laboratory",
     "/dashboard/pharmacy",
+    "/patients",
   ],
   REGISTRATION: ["/dashboard", "/dashboard/registration"],
   TRIAGE: ["/dashboard", "/dashboard/triage"],

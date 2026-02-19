@@ -188,7 +188,7 @@ model Patient {
 
   phone       String?
   addressLine String?
-  barangayId  String?
+  barangayId  String? 
   barangay    Barangay? @relation(fields: [barangayId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   city        String?   @default("Urdaneta City")
   province    String?   @default("Pangasinan")
