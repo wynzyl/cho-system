@@ -8,6 +8,7 @@ datasource db {
 
 enum Role {
   ADMIN
+  REGISTRATION
   TRIAGE
   DOCTOR
   LAB
@@ -183,11 +184,11 @@ model Patient {
   middleName String?
   lastName   String
   birthDate  DateTime
-  sex        Sex      @default(UNKNOWN)
+  sex        Sex      @default(MALE)
 
   phone       String?
   addressLine String?
-  barangayId  String?
+  barangayId  String? 
   barangay    Barangay? @relation(fields: [barangayId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   city        String?   @default("Urdaneta City")
   province    String?   @default("Pangasinan")

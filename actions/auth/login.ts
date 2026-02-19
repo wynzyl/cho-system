@@ -88,7 +88,7 @@ export async function loginAction(
   return {
     ok: true,
     data: {
-      redirectTo: ROLE_ROUTES[user.role] ?? "/dashboard",
+      redirectTo: ROLE_ROUTES[user.role] ?? "/dashboard/triage",
     },
   }
 }
