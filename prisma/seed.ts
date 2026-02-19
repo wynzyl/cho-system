@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
 import { Pool } from "pg"
 import bcrypt from "bcrypt"
+import { BARANGAY_DATA } from "@/lib/constants"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
@@ -19,6 +20,26 @@ async function main() {
 
   await prisma.user.deleteMany()
   await prisma.facility.deleteMany()
+  await prisma.barangay.deleteMany()
+
+  /*
+    -------------------------------------------------------
+    BARANGAYS (Urdaneta City - 34 total)
+    -------------------------------------------------------
+  */
+
+  console.log("Seeding barangays...")
+  for (const brgy of BARANGAY_DATA) {
+    await prisma.barangay.upsert({
+      where: { code: brgy.code },
+      update: { name: brgy.name },
+      create: {
+        code: brgy.code,
+        name: brgy.name,
+      },
+    })
+  }
+  console.log(`Seeded ${BARANGAY_DATA.length} barangays`)
 
   /*
     -------------------------------------------------------

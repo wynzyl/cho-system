@@ -55,6 +55,33 @@ Five roles: ADMIN, TRIAGE, DOCTOR, LAB, PHARMACY
 - httpOnly cookie sessions with JWT (jose library)
 - Session contains: userId, role, name, facilityId, scope
 - Generic error messages only - no detail leaks
+- Timing-safe login: always compare password hash (even for non-existent users)
+- getSession() wrapped in React.cache() for request deduplication
+
+### Route Constants (lib/auth/routes.ts)
+```typescript
+import { ROLE_ROUTES, ROLE_ALLOWED_PATHS } from "@/lib/auth/routes"
+// ROLE_ROUTES: Role → default dashboard path
+// ROLE_ALLOWED_PATHS: Role → list of accessible paths
+```
+
+### Auth Guards
+```typescript
+// Page protection (redirects)
+const session = await requireSession()      // → /login if no session
+const session = await requireRole(["DOCTOR", "LAB"])  // → /unauthorized if wrong role
+
+// Action protection (throws AuthError)
+const session = await requireSessionForAction()  // throws AuthError("UNAUTHORIZED")
+const session = await requireRoleForAction(["PHARMACY"])  // throws AuthError("FORBIDDEN")
+```
+
+### AuthError
+```typescript
+import { AuthError, AuthErrorCode } from "@/lib/auth/guards"
+// AuthErrorCode: "UNAUTHORIZED" | "FORBIDDEN"
+// Use: catch (e) { if (e instanceof AuthError && e.code === "UNAUTHORIZED") ... }
+```
 
 ## Database Rules
 
