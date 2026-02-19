@@ -44,6 +44,10 @@ export async function updatePatientAction(
 
   const data = parsed.data
 
+  // Convert empty strings to null for optional unique fields
+  const emptyToNull = (val: string | undefined | null) =>
+    val?.trim() ? val.trim() : null
+
   const result = await db.$transaction(async (tx) => {
     const existing = await tx.patient.findFirst({
       where: { id: patientId, deletedAt: null },
@@ -56,16 +60,16 @@ export async function updatePatientAction(
     const patient = await tx.patient.update({
       where: { id: patientId },
       data: {
-        firstName: data.firstName,
-        middleName: data.middleName,
-        lastName: data.lastName,
+        firstName: data.firstName?.trim(),
+        middleName: emptyToNull(data.middleName),
+        lastName: data.lastName?.trim(),
         birthDate: data.birthDate,
         sex: data.sex,
-        phone: data.phone,
-        philhealthNo: data.philhealthNo,
-        addressLine: data.addressLine,
-        barangayId: data.barangayId,
-        notes: data.notes,
+        phone: emptyToNull(data.phone),
+        philhealthNo: emptyToNull(data.philhealthNo),
+        addressLine: emptyToNull(data.addressLine),
+        barangayId: data.barangayId || null,
+        notes: emptyToNull(data.notes),
       },
     })
 
