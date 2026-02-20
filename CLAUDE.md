@@ -99,3 +99,191 @@ All use password: `Password123!`
 - triage.main@cho.local (TRIAGE)
 - lab@cho.local (LAB)
 - pharmacy@cho.local (PHARMACY)
+
+
+## CURRENT DASHBOARD LAYOUT (Updated)
+1) App Shell Layout
+┌──────────────────────────────────────────────────────────────────────┐
+│ TOP NAVBAR                                                           │
+│  [CHO System]   [Facility: MAIN/CHO1/CHO2/CHO3]   [Role]   [User]  ⚙ │
+└──────────────────────────────────────────────────────────────────────┘
+┌───────────────────────┬──────────────────────────────────────────────┐
+│ SIDEBAR                │ MAIN CONTENT AREA                            │
+│                        │                                              │
+│  • Admin Dashboard     │  Page Header + Actions                        │
+│  • Patients            │  Filters / Search / Tabs                       │
+│  • Triage              │  Main Table / Forms / Panels                   │
+│  • Appointments        │  Context-specific right panel (optional)       │
+│  • Laboratory          │                                              │
+│  • Pharmacy            │                                              │
+│  • Users               │                                              │
+└───────────────────────┴──────────────────────────────────────────────┘
+
+2) Top Navbar (Included)
+
+Left
+CHO System logo/name
+Current module title (optional)
+Center
+Facility selector/badge (ex: MAIN, CHO1, CHO2, CHO3)
+If scope is FACILITY_ONLY: show fixed badge
+If CITY_WIDE: allow switching facility view (or “All Facilities” if allowed)
+
+Right
+Role badge (ADMIN/REGISTRATION/TRIAGE/DOCTOR/LAB/PHARMACY)
+User menu:
+Profile
+Change password
+Logout
+
+3) Sidebar Navigation (Exactly as you want)
+
+ADMIN Dashboard
+PATIENTS
+TRIAGE
+APPOINTMENTS
+LABORATORY
+PHARMACY
+USERS
+SETTINGS
+
+Role-based visibility still applies (ADMIN sees all; others see permitted modules).
+
+4) Current Page Layout Per Sidebar Item
+A) ADMIN Dashboard
+
+Purpose: overall operational status.
+
+Typical Sections
+
+KPI Cards (Today)
+Waiting Triage
+Waiting Doctor (Appointments)
+Pending Lab
+For Pharmacy
+Recent activity (audit-lite)
+
+Alerts:
+Low stock
+Lab backlog
+
+
+B) PATIENTS (Entry Point + forward to TRIAGE)
+
+Purpose: Validate old/new patient, manage patient record, and assign to triage.
+
+Layout
+
+Page header: Patients
+
+Search bar (name, DOB, patient ID, phone)
+Table: patient list (high density)
+Action buttons:
+Add patient
+Edit patient
+
+View patient summary 
+
+On selecting a patient: show “forward to triage” panel/button
+
+Add Patient Form:if adding NEW patient
+Outputs
+
+Creates/updates patient record
+
+Forwards to TRIAGE (status = WAIT_TRIAGE)
+
+C) TRIAGE (No adding new patient)
+
+Purpose: Search/select queued patient, capture vital signs, then forward to Appointments.
+
+Layout
+
+Left: Patient lists (Today / Status = WAIT_TRIAGE )
+
+Right:
+Main: Triage form (Vitals)
+BP, HR, RR, Temp, SpO2, Weight, Height
+Chief complaint (optional if you allow)
+Submit → status becomes TRIAGED → forwarded
+
+Hard rule enforced
+No “Add Patient” button here.
+
+Only select from Patients/status=WAIT_TRIAGE.
+
+D) APPOINTMENTS (Doctor-only assigned)
+
+Purpose: The logged-in doctor sees only assigned appointments.
+
+Layout
+
+Tabs:
+Today
+Upcoming
+Completed
+
+List/Table:
+Time
+Patient
+Status (WAIT_DOCTOR /  IN_CONSULT / For Lab / For Pharmacy / Done)
+
+Clicking appointment opens:
+
+Patient summary + triage vitals
+Diagnosis / notes
+Orders (Lab)
+Prescriptions
+Key permission
+
+Doctor cannot see other doctors’ appointments.
+
+E) LABORATORY
+
+Purpose: manage lab requests and upload results.
+
+Layout
+
+Tabs: Pending / In Progress / Released
+
+Order details page:
+
+Requested tests
+Upload result (file or structured results)
+Release action (status change)
+
+(If you keep MAIN-only lab rule: include “Requested Facility” vs “Performing Facility = MAIN”.)
+
+F) PHARMACY
+
+Purpose: dispense based on prescriptions, manage inventory in/out.
+
+Layout
+
+Queue: For dispense
+Prescription details:
+Items, quantity, instructions
+Dispense button → inventory OUT txn
+Inventory panel:
+Low stock alerts
+Adjustments
+
+G) USERS
+
+Purpose: manage staff accounts.
+
+Layout
+
+List users
+Add/edit user
+Assign role + scope + facility
+Reset password / deactivate
+
+5) Workflow Summary (Your Intended Path)
+
+Patients (validate or add new )
+→ Triage (vitals only)
+→ Appointments (doctor consult for assigned doctor only)
+→ optional Laboratory
+→ optional Pharmacy
+→ done
