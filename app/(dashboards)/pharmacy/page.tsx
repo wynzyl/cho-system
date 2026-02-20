@@ -1,18 +1,17 @@
 import { requireRole } from "@/lib/auth"
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 
-export default async function PharmacyDashboardPage() {
-  const session = await requireRole(["PHARMACY"])
+export default async function PharmacyPage() {
+  const session = await requireRole(["ADMIN", "PHARMACY"])
 
   return (
     <div>
-      <h1 className="text-2xl font-bold">Pharmacy Dashboard</h1>
+      <h1 className="text-2xl font-bold">Pharmacy</h1>
       <p className="mt-2 text-muted-foreground">
         Welcome, {session.name}
       </p>

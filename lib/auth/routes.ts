@@ -6,11 +6,11 @@ import { Role } from "@prisma/client"
  */
 export const ROLE_ROUTES: Record<Role, string> = {
   ADMIN: "/dashboard",
-  REGISTRATION: "/dashboard/registration",
-  TRIAGE: "/dashboard/triage",
-  DOCTOR: "/dashboard/doctor",
-  LAB: "/dashboard/laboratory",
-  PHARMACY: "/dashboard/pharmacy",
+  REGISTRATION: "/patients",
+  TRIAGE: "/triage",
+  DOCTOR: "/appointments",
+  LAB: "/laboratory",
+  PHARMACY: "/pharmacy",
 }
 
 /**
@@ -20,16 +20,18 @@ export const ROLE_ROUTES: Record<Role, string> = {
 export const ROLE_ALLOWED_PATHS: Record<Role, string[]> = {
   ADMIN: [
     "/dashboard",
-    "/dashboard/registration",
-    "/dashboard/triage",
-    "/dashboard/doctor",
-    "/dashboard/laboratory",
-    "/dashboard/pharmacy",
     "/patients",
+    "/triage",
+    "/appointments",
+    "/laboratory",
+    "/pharmacy",
+    "/users",
+    "/settings",
+    "/profile",
   ],
-  REGISTRATION: ["/dashboard", "/dashboard/registration"],
-  TRIAGE: ["/dashboard", "/dashboard/triage"],
-  DOCTOR: ["/dashboard", "/dashboard/doctor"],
-  LAB: ["/dashboard", "/dashboard/laboratory"],
-  PHARMACY: ["/dashboard", "/dashboard/pharmacy"],
+  REGISTRATION: ["/dashboard", "/patients", "/appointments", "/profile"],
+  TRIAGE: ["/dashboard", "/triage", "/appointments", "/profile"],
+  DOCTOR: ["/dashboard", "/appointments", "/profile"],
+  LAB: ["/dashboard", "/laboratory", "/profile"],
+  PHARMACY: ["/dashboard", "/pharmacy", "/profile"],
 }

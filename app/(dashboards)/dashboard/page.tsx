@@ -1,28 +1,62 @@
 import { requireSession } from "@/lib/auth"
-import { redirect } from "next/navigation"
-import { ROLE_ROUTES } from "@/lib/auth/routes"
-
-// Admin lands on triage by default when visiting /dashboard
-const DASHBOARD_LANDING: Record<string, string> = {
-  ...ROLE_ROUTES,
-  ADMIN: "/dashboard/triage",
-}
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 export default async function DashboardPage() {
   const session = await requireSession()
 
-  // Redirect to role-specific dashboard
-  const targetRoute = DASHBOARD_LANDING[session.role]
-  if (targetRoute && targetRoute !== "/dashboard") {
-    redirect(targetRoute)
+  if (session.role === "ADMIN") {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        <p className="mt-2 text-muted-foreground">
+          System overview and key metrics
+        </p>
+        <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
+              <CardDescription className="text-2xl font-bold">-</CardDescription>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Today&apos;s Encounters</CardTitle>
+              <CardDescription className="text-2xl font-bold">-</CardDescription>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Pending Lab Orders</CardTitle>
+              <CardDescription className="text-2xl font-bold">-</CardDescription>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+              <CardDescription className="text-2xl font-bold">-</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div>
       <h1 className="text-2xl font-bold">Dashboard</h1>
       <p className="mt-2 text-muted-foreground">
-        Welcome, {session.name}. Role: {session.role}
+        Welcome back, {session.name}
       </p>
+      <div className="mt-6 rounded-lg border bg-card p-6">
+        <p className="text-sm text-muted-foreground">
+          Use the sidebar to navigate to your assigned modules.
+        </p>
+      </div>
     </div>
   )
 }
