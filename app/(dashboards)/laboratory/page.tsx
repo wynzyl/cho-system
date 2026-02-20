@@ -1,11 +1,11 @@
 import { requireRole } from "@/lib/auth"
 
-export default async function LaboratoryDashboardPage() {
-  const session = await requireRole(["LAB"])
+export default async function LaboratoryPage() {
+  const session = await requireRole(["ADMIN", "LAB"])
 
   return (
     <div>
-      <h1 className="text-2xl font-bold">Laboratory Dashboard</h1>
+      <h1 className="text-2xl font-bold">Laboratory</h1>
       <p className="mt-2 text-muted-foreground">
         Welcome, {session.name}
       </p>
