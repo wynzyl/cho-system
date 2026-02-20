@@ -12,6 +12,7 @@ export function TriagePageClient() {
   const [encounters, setEncounters] = useState<TriageQueueItem[]>([])
   const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [refreshKey, setRefreshKey] = useState(0)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -24,25 +25,38 @@ export function TriagePageClient() {
 
     async function fetchQueue() {
       setIsLoading(true)
-      const result = await getTriageQueueAction()
-      if (cancelled) return
+      setError(null)
 
-      if (result.ok) {
-        const newEncounters = result.data.encounters
-        setEncounters(newEncounters)
-        // Auto-select new encounter if we have a pending selection, otherwise keep current or select first
-        setSelectedEncounterId((currentId) => {
-          if (pendingSelectId && newEncounters.some((e) => e.id === pendingSelectId)) {
-            setPendingSelectId(null)
-            return pendingSelectId
-          }
-          if (newEncounters.length === 0) return null
-          const currentExists = newEncounters.some((e) => e.id === currentId)
-          if (!currentExists) return newEncounters[0].id
-          return currentId
-        })
+      try {
+        const result = await getTriageQueueAction()
+        if (cancelled) return
+
+        if (result.ok) {
+          const newEncounters = result.data.encounters
+          setEncounters(newEncounters)
+          // Auto-select new encounter if we have a pending selection, otherwise keep current or select first
+          setSelectedEncounterId((currentId) => {
+            if (pendingSelectId && newEncounters.some((e) => e.id === pendingSelectId)) {
+              setPendingSelectId(null)
+              return pendingSelectId
+            }
+            if (newEncounters.length === 0) return null
+            const currentExists = newEncounters.some((e) => e.id === currentId)
+            if (!currentExists) return newEncounters[0].id
+            return currentId
+          })
+        } else {
+          setError(result.error.message || "Failed to load triage queue")
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Failed to load triage queue")
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
       }
-      setIsLoading(false)
     }
 
     fetchQueue()
@@ -76,6 +90,13 @@ export function TriagePageClient() {
           Add Patient to Queue
         </Button>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="mt-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {/* Main Content - Two Panel Layout */}
       <div className="mt-6 grid flex-1 gap-6 lg:grid-cols-[1fr_400px]">

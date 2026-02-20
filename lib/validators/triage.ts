@@ -1,8 +1,7 @@
 import { z } from "zod"
 
-export const getTriageQueueSchema = z.object({
-  query: z.string().max(100).optional(),
-}).strict()
+// Note: Queue filtering happens client-side since it's a small daily list
+export const getTriageQueueSchema = z.object({}).strict()
 
 export const submitTriageSchema = z.object({
   encounterId: z.string().uuid("Invalid encounter ID"),

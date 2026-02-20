@@ -14,7 +14,7 @@ export type TriageQueueItem = {
   age: number
   sex: Sex
   chiefComplaint: string | null
-  occurredAt: Date
+  occurredAt: string // ISO string (serialized by Next.js server/client boundary)
   priority: "HIGH" | "MEDIUM" | "LOW"
 }
 
@@ -28,25 +28,39 @@ function calculateAge(birthDate: Date): number {
   return age
 }
 
+// Pre-compiled regex patterns for priority detection (word-boundary matching)
+const HIGH_PRIORITY_PATTERNS = [
+  /\bchest pain\b/i,
+  /\bdifficulty breathing\b/i,
+  /\bshortness of breath\b/i,
+  /\bsevere\b/i,
+  /\bunconscious\b/i,
+  /\bbleeding\b/i,
+  /\bstroke\b/i,
+  /\bheart attack\b/i,
+  /\bseizure\b/i,
+  /\btrauma\b/i,
+  /\bemergency\b/i,
+]
+
+const LOW_PRIORITY_PATTERNS = [
+  /\bfollow up\b/i,
+  /\bfollow-up\b/i,
+  /\bcheckup\b/i,
+  /\bcheck-up\b/i,
+  /\broutine\b/i,
+  /\bmild\b/i,
+  /\bminor\b/i,
+]
+
 function determinePriority(chiefComplaint: string | null): "HIGH" | "MEDIUM" | "LOW" {
   if (!chiefComplaint) return "MEDIUM"
 
-  const complaint = chiefComplaint.toLowerCase()
-  const highPriorityKeywords = [
-    "chest pain", "difficulty breathing", "shortness of breath",
-    "severe", "unconscious", "bleeding", "stroke", "heart attack",
-    "seizure", "trauma", "emergency"
-  ]
-
-  const lowPriorityKeywords = [
-    "follow up", "checkup", "routine", "mild", "minor"
-  ]
-
-  if (highPriorityKeywords.some(keyword => complaint.includes(keyword))) {
+  if (HIGH_PRIORITY_PATTERNS.some((pattern) => pattern.test(chiefComplaint))) {
     return "HIGH"
   }
 
-  if (lowPriorityKeywords.some(keyword => complaint.includes(keyword))) {
+  if (LOW_PRIORITY_PATTERNS.some((pattern) => pattern.test(chiefComplaint))) {
     return "LOW"
   }
 
@@ -113,7 +127,7 @@ export async function getTriageQueueAction(
     age: calculateAge(encounter.patient.birthDate),
     sex: encounter.patient.sex,
     chiefComplaint: encounter.chiefComplaint,
-    occurredAt: encounter.occurredAt,
+    occurredAt: encounter.occurredAt.toISOString(),
     priority: determinePriority(encounter.chiefComplaint),
   }))
 

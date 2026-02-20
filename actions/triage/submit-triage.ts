@@ -14,7 +14,7 @@ export async function submitTriageAction(
   if (!parsed.success) {
     const fieldErrors: Record<string, string[]> = {}
     for (const issue of parsed.error.issues) {
-      const field = issue.path[0] as string
+      const field = String(issue.path[0])
       if (!fieldErrors[field]) {
         fieldErrors[field] = []
       }
@@ -32,10 +32,11 @@ export async function submitTriageAction(
 
   const data = parsed.data
 
-  // Verify encounter exists with WAIT_TRIAGE status
+  // Verify encounter exists with WAIT_TRIAGE status and belongs to user's facility
   const encounter = await db.encounter.findFirst({
     where: {
       id: data.encounterId,
+      facilityId: session.facilityId,
       status: "WAIT_TRIAGE",
       deletedAt: null,
     },

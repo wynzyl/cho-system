@@ -4,13 +4,12 @@ import { useEffect, useTransition } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Activity, Heart, Thermometer, Wind, Droplets, Scale } from "lucide-react"
+import { Activity, Heart, Thermometer, Wind, Droplets, Scale, Ruler, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
 import { submitTriageAction, type TriageQueueItem } from "@/actions/triage"
 
 const vitalsFormSchema = z.object({
@@ -63,6 +62,13 @@ const vitalsFormSchema = z.object({
       const num = parseFloat(val)
       return !isNaN(num) && num >= 0.5 && num <= 500
     }, "Must be between 0.5-500 kg"),
+  heightCm: z
+    .string()
+    .min(1, "Height is required")
+    .refine((val) => {
+      const num = parseFloat(val)
+      return !isNaN(num) && num >= 20 && num <= 300
+    }, "Must be between 20-300 cm"),
   chiefComplaint: z
     .string()
     .min(1, "Chief complaint is required")
@@ -91,6 +97,7 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
       respiratoryRate: "",
       spo2: "",
       weightKg: "",
+      heightCm: "",
       chiefComplaint: "",
       triageNotes: "",
     },
@@ -108,6 +115,7 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
       respiratoryRate: "",
       spo2: "",
       weightKg: "",
+      heightCm: "",
       chiefComplaint: selectedEncounter?.chiefComplaint ?? "",
       triageNotes: "",
     })
@@ -126,7 +134,7 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
         temperatureC: parseFloat(data.temperatureC),
         spo2: parseInt(data.spo2, 10),
         weightKg: parseFloat(data.weightKg),
-        heightCm: null,
+        heightCm: parseFloat(data.heightCm),
         chiefComplaint: data.chiefComplaint,
         triageNotes: data.triageNotes || null,
       })
@@ -140,6 +148,10 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
             form.setError(field as keyof VitalsFormData, {
               message: messages[0],
             })
+          })
+        } else {
+          form.setError("root", {
+            message: result.error.message || "Submission failed",
           })
         }
       }
@@ -301,6 +313,26 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
             )}
           </div>
 
+          {/* Height */}
+          <div className="space-y-2">
+            <Label htmlFor="heightCm" className="flex items-center gap-2">
+              <Ruler className="h-4 w-4 text-emerald-500" />
+              Height (cm) <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="heightCm"
+              placeholder="e.g., 165"
+              {...form.register("heightCm")}
+              disabled={isFormDisabled}
+              type="number"
+              step="0.1"
+              aria-invalid={!!errors.heightCm}
+            />
+            {errors.heightCm && (
+              <p className="text-sm text-destructive">{errors.heightCm.message}</p>
+            )}
+          </div>
+
           {/* Chief Complaint */}
           <div className="space-y-2">
             <Label htmlFor="chiefComplaint">
@@ -333,6 +365,12 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
               <p className="text-sm text-destructive">{errors.triageNotes.message}</p>
             )}
           </div>
+
+          {errors.root && (
+            <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {errors.root.message}
+            </div>
+          )}
 
           <Button type="submit" disabled={isSubmitDisabled} className="w-full">
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
