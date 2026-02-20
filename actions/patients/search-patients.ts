@@ -45,18 +45,50 @@ export async function searchPatientsAction(
   const { query, page, pageSize } = parsed.data
   const skip = (page - 1) * pageSize
 
+  // Check if query is a date (YYYY-MM-DD or MM/DD/YYYY format)
+  let birthDateFilter: Date | null = null
+  if (query) {
+    // Try YYYY-MM-DD format
+    const isoMatch = query.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+    if (isoMatch) {
+      const parsed = new Date(query)
+      if (!isNaN(parsed.getTime())) {
+        birthDateFilter = parsed
+      }
+    }
+    // Try MM/DD/YYYY format
+    const usMatch = query.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+    if (usMatch) {
+      const [, month, day, year] = usMatch
+      const parsed = new Date(Number(year), Number(month) - 1, Number(day))
+      if (!isNaN(parsed.getTime())) {
+        birthDateFilter = parsed
+      }
+    }
+  }
+
+  const orConditions: object[] = query
+    ? [
+        { lastName: { contains: query, mode: "insensitive" as const } },
+        { firstName: { contains: query, mode: "insensitive" as const } },
+        { phone: { contains: query } },
+        { patientCode: { contains: query, mode: "insensitive" as const } },
+      ]
+    : []
+
+  // Add birthDate search if query matches a date format
+  if (birthDateFilter) {
+    // Match exact date (compare just the date portion)
+    const startOfDay = new Date(birthDateFilter)
+    startOfDay.setHours(0, 0, 0, 0)
+    const endOfDay = new Date(birthDateFilter)
+    endOfDay.setHours(23, 59, 59, 999)
+    orConditions.push({ birthDate: { gte: startOfDay, lte: endOfDay } })
+  }
+
   const whereClause = {
     deletedAt: null,
-    ...(query
-      ? {
-          OR: [
-            { lastName: { contains: query, mode: "insensitive" as const } },
-            { firstName: { contains: query, mode: "insensitive" as const } },
-            { phone: { contains: query } },
-            { patientCode: { contains: query, mode: "insensitive" as const } },
-          ],
-        }
-      : {}),
+    ...(orConditions.length > 0 ? { OR: orConditions } : {}),
   }
 
   const [patients, total] = await Promise.all([

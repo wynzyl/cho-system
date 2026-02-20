@@ -3,7 +3,13 @@
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import type { ActionResult } from "@/lib/auth/types"
-import { Patient, Encounter, EncounterStatus, Sex, Barangay } from "@prisma/client"
+import { Patient, EncounterStatus, Barangay } from "@prisma/client"
+
+export type TodayEncounter = {
+  id: string
+  status: EncounterStatus
+  occurredAt: Date
+} | null
 
 export type PatientWithEncounters = Patient & {
   barangay: Barangay | null
@@ -13,6 +19,7 @@ export type PatientWithEncounters = Patient & {
     status: EncounterStatus
     chiefComplaint: string | null
   }[]
+  todayEncounter: TodayEncounter
 }
 
 export async function getPatientAction(
@@ -58,8 +65,26 @@ export async function getPatientAction(
     }
   }
 
+  // Check for existing encounter today
+  const startOfDay = new Date()
+  startOfDay.setHours(0, 0, 0, 0)
+  const endOfDay = new Date()
+  endOfDay.setHours(23, 59, 59, 999)
+
+  const todayEncounter = await db.encounter.findFirst({
+    where: {
+      patientId,
+      occurredAt: { gte: startOfDay, lte: endOfDay },
+      deletedAt: null,
+    },
+    select: { id: true, status: true, occurredAt: true },
+  })
+
   return {
     ok: true,
-    data: patient,
+    data: {
+      ...patient,
+      todayEncounter: todayEncounter ?? null,
+    },
   }
 }

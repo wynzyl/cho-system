@@ -38,6 +38,31 @@ export async function createEncounterAction(
     }
   }
 
+  // Check for existing encounter today (one encounter per patient per day)
+  const startOfDay = new Date()
+  startOfDay.setHours(0, 0, 0, 0)
+  const endOfDay = new Date()
+  endOfDay.setHours(23, 59, 59, 999)
+
+  const existingEncounter = await db.encounter.findFirst({
+    where: {
+      patientId,
+      facilityId: session.facilityId,
+      occurredAt: { gte: startOfDay, lte: endOfDay },
+      deletedAt: null,
+    },
+  })
+
+  if (existingEncounter) {
+    return {
+      ok: false,
+      error: {
+        code: "ENCOUNTER_EXISTS",
+        message: "Patient already has an encounter today",
+      },
+    }
+  }
+
   const encounter = await db.$transaction(async (tx) => {
     const newEncounter = await tx.encounter.create({
       data: {

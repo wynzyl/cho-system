@@ -1,5 +1,18 @@
 import { requireSession } from "@/lib/auth"
 
+const ROLE_LABELS: Record<string, string> = {
+  ADMIN: "Administrator",
+  REGISTRATION: "Registration",
+  TRIAGE: "Triage",
+  DOCTOR: "Doctor",
+  LAB: "Laboratory",
+  PHARMACY: "Pharmacy",
+}
+
+function formatRole(role: string): string {
+  return ROLE_LABELS[role] ?? role
+}
+
 export default async function ProfilePage() {
   const session = await requireSession()
 
@@ -9,16 +22,16 @@ export default async function ProfilePage() {
       <p className="mt-2 text-muted-foreground">
         Manage your account settings
       </p>
-      <div className="mt-6 rounded-lg border bg-card p-6 space-y-4">
+      <dl className="mt-6 rounded-lg border bg-card p-6 space-y-4">
         <div>
-          <label className="text-sm font-medium text-muted-foreground">Name</label>
-          <p className="mt-1">{session.name}</p>
+          <dt className="text-sm font-medium text-muted-foreground">Name</dt>
+          <dd className="mt-1">{session.name}</dd>
         </div>
         <div>
-          <label className="text-sm font-medium text-muted-foreground">Role</label>
-          <p className="mt-1">{session.role}</p>
+          <dt className="text-sm font-medium text-muted-foreground">Role</dt>
+          <dd className="mt-1">{formatRole(session.role)}</dd>
         </div>
-      </div>
+      </dl>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { requireSession } from "@/lib/auth"
 import {
   Card,
-  CardDescription,
+  CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -20,26 +20,34 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
-              <CardDescription className="text-2xl font-bold">-</CardDescription>
             </CardHeader>
+            <CardContent className="pt-0">
+              <p className="text-2xl font-bold">-</p>
+            </CardContent>
           </Card>
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium">Today&apos;s Encounters</CardTitle>
-              <CardDescription className="text-2xl font-bold">-</CardDescription>
             </CardHeader>
+            <CardContent className="pt-0">
+              <p className="text-2xl font-bold">-</p>
+            </CardContent>
           </Card>
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium">Pending Lab Orders</CardTitle>
-              <CardDescription className="text-2xl font-bold">-</CardDescription>
             </CardHeader>
+            <CardContent className="pt-0">
+              <p className="text-2xl font-bold">-</p>
+            </CardContent>
           </Card>
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-              <CardDescription className="text-2xl font-bold">-</CardDescription>
             </CardHeader>
+            <CardContent className="pt-0">
+              <p className="text-2xl font-bold">-</p>
+            </CardContent>
           </Card>
         </div>
       </div>

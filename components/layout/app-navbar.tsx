@@ -1,15 +1,10 @@
-import { Role } from "@prisma/client"
+import { SessionUser } from "@/lib/auth/types"
 import { Badge } from "@/components/ui/badge"
 import { MobileSidebar } from "./mobile-sidebar"
 import { UserMenu } from "./user-menu"
 
 interface AppNavbarProps {
-  session: {
-    userId: string
-    role: Role
-    name: string
-    facilityId: string
-  }
+  session: SessionUser
   facility: {
     code: string
     name: string

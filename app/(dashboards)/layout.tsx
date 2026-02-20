@@ -1,5 +1,5 @@
 import { requireSession } from "@/lib/auth"
-import { db } from "@/lib/db"
+import { getFacilityById } from "@/lib/db/queries"
 import { AppNavbar } from "@/components/layout/app-navbar"
 import { AppSidebar } from "@/components/layout/app-sidebar"
 
@@ -9,10 +9,7 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const session = await requireSession()
-  const facility = await db.facility.findUnique({
-    where: { id: session.facilityId },
-    select: { code: true, name: true },
-  })
+  const facility = await getFacilityById(session.facilityId)
 
   return (
     <div className="min-h-screen bg-background">
