@@ -39,11 +39,14 @@ export function UserMenu({ userName }: UserMenuProps) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem
+          className="p-0"
+          onSelect={(e) => e.preventDefault()}
+        >
           <form action={logoutAction} className="w-full">
             <button
               type="submit"
-              className="flex w-full items-center gap-2 text-destructive"
+              className="flex w-full items-center gap-2 px-2 py-1.5 text-destructive"
             >
               <LogOut className="size-4" />
               Logout

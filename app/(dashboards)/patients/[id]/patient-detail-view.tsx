@@ -16,7 +16,8 @@ import {
 import { PatientForm } from "@/components/forms/patient-form"
 import { createEncounterAction } from "@/actions/encounters"
 import type { PatientWithEncounters } from "@/actions/patients"
-import { Pencil, PlayCircle, Loader2 } from "lucide-react"
+import { Pencil, PlayCircle, Loader2, Info } from "lucide-react"
+import Link from "next/link"
 
 interface PatientDetailViewProps {
   patient: PatientWithEncounters
@@ -130,6 +131,27 @@ export function PatientDetailView({
 
   return (
     <div className="space-y-6">
+      {patient.todayEncounter && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="flex items-center justify-between py-3">
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4 text-blue-600" />
+              <span className="text-sm">
+                Encounter in progress today -{" "}
+                <Badge variant={getStatusBadgeVariant(patient.todayEncounter.status)}>
+                  {formatStatus(patient.todayEncounter.status)}
+                </Badge>
+              </span>
+            </div>
+            <Link
+              href={`/encounters/${patient.todayEncounter.id}`}
+              className="text-sm font-medium text-blue-600 underline underline-offset-4 hover:text-blue-800"
+            >
+              View Encounter
+            </Link>
+          </CardContent>
+        </Card>
+      )}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Patient Details</h1>
         <div className="flex gap-2">
@@ -142,7 +164,7 @@ export function PatientDetailView({
               Edit
             </Button>
           )}
-          {canStartEncounter && (
+          {canStartEncounter && !patient.todayEncounter && (
             <div className="flex flex-col items-end gap-1">
               <Button onClick={handleStartEncounter} disabled={isPending}>
                 {isPending ? (
