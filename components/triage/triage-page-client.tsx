@@ -1,11 +1,11 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import Link from "next/link"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { TriageQueue } from "@/components/triage/triage-queue"
 import { VitalsForm } from "@/components/triage/vitals-form"
+import { AddToQueueDialog } from "@/components/triage/add-to-queue-dialog"
 import { getTriageQueueAction, type TriageQueueItem } from "@/actions/triage"
 
 export function TriagePageClient() {
@@ -14,6 +14,8 @@ export function TriagePageClient() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [refreshKey, setRefreshKey] = useState(0)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [pendingSelectId, setPendingSelectId] = useState<string | null>(null)
 
   const selectedEncounter = encounters.find((e) => e.id === selectedEncounterId) ?? null
 
@@ -28,8 +30,12 @@ export function TriagePageClient() {
       if (result.ok) {
         const newEncounters = result.data.encounters
         setEncounters(newEncounters)
-        // Auto-select first encounter if none selected or current selection no longer exists
+        // Auto-select new encounter if we have a pending selection, otherwise keep current or select first
         setSelectedEncounterId((currentId) => {
+          if (pendingSelectId && newEncounters.some((e) => e.id === pendingSelectId)) {
+            setPendingSelectId(null)
+            return pendingSelectId
+          }
           if (newEncounters.length === 0) return null
           const currentExists = newEncounters.some((e) => e.id === currentId)
           if (!currentExists) return newEncounters[0].id
@@ -44,9 +50,14 @@ export function TriagePageClient() {
     return () => {
       cancelled = true
     }
-  }, [refreshKey])
+  }, [refreshKey, pendingSelectId])
 
   const handleTriageSuccess = useCallback(() => {
+    setRefreshKey((k) => k + 1)
+  }, [])
+
+  const handleAddToQueueSuccess = useCallback((encounterId: string) => {
+    setPendingSelectId(encounterId)
     setRefreshKey((k) => k + 1)
   }, [])
 
@@ -60,11 +71,9 @@ export function TriagePageClient() {
             Record patient vital signs and triage assessment
           </p>
         </div>
-        <Button asChild>
-          <Link href="/patients">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Patient to Queue
-          </Link>
+        <Button onClick={() => setDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Patient to Queue
         </Button>
       </div>
 
@@ -90,6 +99,13 @@ export function TriagePageClient() {
           />
         </div>
       </div>
+
+      {/* Add to Queue Dialog */}
+      <AddToQueueDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={handleAddToQueueSuccess}
+      />
     </div>
   )
 }

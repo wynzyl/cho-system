@@ -14,16 +14,60 @@ import { Loader2 } from "lucide-react"
 import { submitTriageAction, type TriageQueueItem } from "@/actions/triage"
 
 const vitalsFormSchema = z.object({
-  bpSystolic: z.string().optional(),
-  bpDiastolic: z.string().optional(),
-  heartRate: z.string().optional(),
-  temperatureC: z.string().optional(),
-  respiratoryRate: z.string().optional(),
-  spo2: z.string().optional(),
-  weightKg: z.string().optional(),
-  heightCm: z.string().optional(),
-  chiefComplaint: z.string().max(500).optional(),
-  triageNotes: z.string().max(2000).optional(),
+  bpSystolic: z
+    .string()
+    .min(1, "Systolic BP is required")
+    .refine((val) => {
+      const num = parseInt(val, 10)
+      return !isNaN(num) && num >= 50 && num <= 300
+    }, "Must be between 50-300"),
+  bpDiastolic: z
+    .string()
+    .min(1, "Diastolic BP is required")
+    .refine((val) => {
+      const num = parseInt(val, 10)
+      return !isNaN(num) && num >= 20 && num <= 200
+    }, "Must be between 20-200"),
+  heartRate: z
+    .string()
+    .min(1, "Heart rate is required")
+    .refine((val) => {
+      const num = parseInt(val, 10)
+      return !isNaN(num) && num >= 20 && num <= 250
+    }, "Must be between 20-250"),
+  temperatureC: z
+    .string()
+    .min(1, "Temperature is required")
+    .refine((val) => {
+      const num = parseFloat(val)
+      return !isNaN(num) && num >= 30 && num <= 45
+    }, "Must be between 30-45°C"),
+  respiratoryRate: z
+    .string()
+    .min(1, "Respiratory rate is required")
+    .refine((val) => {
+      const num = parseInt(val, 10)
+      return !isNaN(num) && num >= 5 && num <= 60
+    }, "Must be between 5-60"),
+  spo2: z
+    .string()
+    .min(1, "Oxygen saturation is required")
+    .refine((val) => {
+      const num = parseInt(val, 10)
+      return !isNaN(num) && num >= 50 && num <= 100
+    }, "Must be between 50-100%"),
+  weightKg: z
+    .string()
+    .min(1, "Weight is required")
+    .refine((val) => {
+      const num = parseFloat(val)
+      return !isNaN(num) && num >= 0.5 && num <= 500
+    }, "Must be between 0.5-500 kg"),
+  chiefComplaint: z
+    .string()
+    .min(1, "Chief complaint is required")
+    .max(500, "Maximum 500 characters"),
+  triageNotes: z.string().max(2000, "Maximum 2000 characters").optional(),
 })
 
 type VitalsFormData = z.infer<typeof vitalsFormSchema>
@@ -38,6 +82,7 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
 
   const form = useForm<VitalsFormData>({
     resolver: zodResolver(vitalsFormSchema),
+    mode: "onChange",
     defaultValues: {
       bpSystolic: "",
       bpDiastolic: "",
@@ -46,11 +91,12 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
       respiratoryRate: "",
       spo2: "",
       weightKg: "",
-      heightCm: "",
       chiefComplaint: "",
       triageNotes: "",
     },
   })
+
+  const { formState: { errors, isValid } } = form
 
   // Reset form when selected encounter changes
   useEffect(() => {
@@ -62,7 +108,6 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
       respiratoryRate: "",
       spo2: "",
       weightKg: "",
-      heightCm: "",
       chiefComplaint: selectedEncounter?.chiefComplaint ?? "",
       triageNotes: "",
     })
@@ -72,29 +117,17 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
     if (!selectedEncounter) return
 
     startTransition(async () => {
-      const parseNumber = (val: string | undefined) => {
-        if (!val || val.trim() === "") return null
-        const num = parseFloat(val)
-        return isNaN(num) ? null : num
-      }
-
-      const parseInteger = (val: string | undefined) => {
-        if (!val || val.trim() === "") return null
-        const num = parseInt(val, 10)
-        return isNaN(num) ? null : num
-      }
-
       const result = await submitTriageAction({
         encounterId: selectedEncounter.id,
-        bpSystolic: parseInteger(data.bpSystolic),
-        bpDiastolic: parseInteger(data.bpDiastolic),
-        heartRate: parseInteger(data.heartRate),
-        respiratoryRate: parseInteger(data.respiratoryRate),
-        temperatureC: parseNumber(data.temperatureC),
-        spo2: parseInteger(data.spo2),
-        weightKg: parseNumber(data.weightKg),
-        heightCm: parseNumber(data.heightCm),
-        chiefComplaint: data.chiefComplaint || null,
+        bpSystolic: parseInt(data.bpSystolic, 10),
+        bpDiastolic: parseInt(data.bpDiastolic, 10),
+        heartRate: parseInt(data.heartRate, 10),
+        respiratoryRate: parseInt(data.respiratoryRate, 10),
+        temperatureC: parseFloat(data.temperatureC),
+        spo2: parseInt(data.spo2, 10),
+        weightKg: parseFloat(data.weightKg),
+        heightCm: null,
+        chiefComplaint: data.chiefComplaint,
         triageNotes: data.triageNotes || null,
       })
 
@@ -113,7 +146,8 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
     })
   }
 
-  const isDisabled = !selectedEncounter || isPending
+  const isFormDisabled = !selectedEncounter || isPending
+  const isSubmitDisabled = isFormDisabled || !isValid
 
   return (
     <Card className="h-full">
@@ -122,9 +156,13 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
           <Activity className="h-5 w-5" />
           Record Vital Signs
         </CardTitle>
-        {selectedEncounter && (
+        {selectedEncounter ? (
           <div className="rounded-md bg-muted px-3 py-2 text-sm">
             Recording vitals for: <span className="font-semibold">{selectedEncounter.patientName}</span>
+          </div>
+        ) : (
+          <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+            Select a patient from the queue to record vitals
           </div>
         )}
       </CardHeader>
@@ -134,128 +172,151 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Heart className="h-4 w-4 text-red-500" />
-              Blood Pressure (mmHg)
+              Blood Pressure (mmHg) <span className="text-destructive">*</span>
             </Label>
             <div className="flex items-center gap-2">
-              <Input
-                placeholder="120"
-                {...form.register("bpSystolic")}
-                disabled={isDisabled}
-                className="w-24"
-                type="number"
-                min="50"
-                max="300"
-              />
+              <div>
+                <Input
+                  placeholder="120"
+                  {...form.register("bpSystolic")}
+                  disabled={isFormDisabled}
+                  className="w-24"
+                  type="number"
+                  aria-invalid={!!errors.bpSystolic}
+                />
+              </div>
               <span className="text-muted-foreground">/</span>
-              <Input
-                placeholder="80"
-                {...form.register("bpDiastolic")}
-                disabled={isDisabled}
-                className="w-24"
-                type="number"
-                min="20"
-                max="200"
-              />
+              <div>
+                <Input
+                  placeholder="80"
+                  {...form.register("bpDiastolic")}
+                  disabled={isFormDisabled}
+                  className="w-24"
+                  type="number"
+                  aria-invalid={!!errors.bpDiastolic}
+                />
+              </div>
             </div>
+            {(errors.bpSystolic || errors.bpDiastolic) && (
+              <p className="text-sm text-destructive">
+                {errors.bpSystolic?.message || errors.bpDiastolic?.message}
+              </p>
+            )}
           </div>
 
           {/* Heart Rate */}
           <div className="space-y-2">
             <Label htmlFor="heartRate" className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-pink-500" />
-              Heart Rate (bpm)
+              Heart Rate (bpm) <span className="text-destructive">*</span>
             </Label>
             <Input
               id="heartRate"
               placeholder="e.g., 72"
               {...form.register("heartRate")}
-              disabled={isDisabled}
+              disabled={isFormDisabled}
               type="number"
-              min="20"
-              max="250"
+              aria-invalid={!!errors.heartRate}
             />
+            {errors.heartRate && (
+              <p className="text-sm text-destructive">{errors.heartRate.message}</p>
+            )}
           </div>
 
           {/* Temperature */}
           <div className="space-y-2">
             <Label htmlFor="temperatureC" className="flex items-center gap-2">
               <Thermometer className="h-4 w-4 text-orange-500" />
-              Temperature (°C)
+              Temperature (°C) <span className="text-destructive">*</span>
             </Label>
             <Input
               id="temperatureC"
               placeholder="e.g., 36.5"
               {...form.register("temperatureC")}
-              disabled={isDisabled}
+              disabled={isFormDisabled}
               type="number"
               step="0.1"
-              min="30"
-              max="45"
+              aria-invalid={!!errors.temperatureC}
             />
+            {errors.temperatureC && (
+              <p className="text-sm text-destructive">{errors.temperatureC.message}</p>
+            )}
           </div>
 
           {/* Respiratory Rate */}
           <div className="space-y-2">
             <Label htmlFor="respiratoryRate" className="flex items-center gap-2">
               <Wind className="h-4 w-4 text-blue-500" />
-              Respiratory Rate (breaths/min)
+              Respiratory Rate (breaths/min) <span className="text-destructive">*</span>
             </Label>
             <Input
               id="respiratoryRate"
               placeholder="e.g., 16"
               {...form.register("respiratoryRate")}
-              disabled={isDisabled}
+              disabled={isFormDisabled}
               type="number"
-              min="5"
-              max="60"
+              aria-invalid={!!errors.respiratoryRate}
             />
+            {errors.respiratoryRate && (
+              <p className="text-sm text-destructive">{errors.respiratoryRate.message}</p>
+            )}
           </div>
 
           {/* Oxygen Saturation */}
           <div className="space-y-2">
             <Label htmlFor="spo2" className="flex items-center gap-2">
               <Droplets className="h-4 w-4 text-cyan-500" />
-              Oxygen Saturation (%)
+              Oxygen Saturation (%) <span className="text-destructive">*</span>
             </Label>
             <Input
               id="spo2"
               placeholder="e.g., 98"
               {...form.register("spo2")}
-              disabled={isDisabled}
+              disabled={isFormDisabled}
               type="number"
-              min="50"
-              max="100"
+              aria-invalid={!!errors.spo2}
             />
+            {errors.spo2 && (
+              <p className="text-sm text-destructive">{errors.spo2.message}</p>
+            )}
           </div>
 
           {/* Weight */}
           <div className="space-y-2">
             <Label htmlFor="weightKg" className="flex items-center gap-2">
               <Scale className="h-4 w-4 text-green-500" />
-              Weight (kg)
+              Weight (kg) <span className="text-destructive">*</span>
             </Label>
             <Input
               id="weightKg"
               placeholder="e.g., 65"
               {...form.register("weightKg")}
-              disabled={isDisabled}
+              disabled={isFormDisabled}
               type="number"
               step="0.1"
-              min="0.5"
-              max="500"
+              aria-invalid={!!errors.weightKg}
             />
+            {errors.weightKg && (
+              <p className="text-sm text-destructive">{errors.weightKg.message}</p>
+            )}
           </div>
 
           {/* Chief Complaint */}
           <div className="space-y-2">
-            <Label htmlFor="chiefComplaint">Chief Complaint</Label>
+            <Label htmlFor="chiefComplaint">
+              Chief Complaint <span className="text-destructive">*</span>
+            </Label>
             <Textarea
               id="chiefComplaint"
               placeholder="Patient's main complaint..."
               {...form.register("chiefComplaint")}
-              disabled={isDisabled}
+              disabled={isFormDisabled}
               rows={2}
+              aria-invalid={!!errors.chiefComplaint}
             />
+            {errors.chiefComplaint && (
+              <p className="text-sm text-destructive">{errors.chiefComplaint.message}</p>
+            )}
           </div>
 
           {/* Notes */}
@@ -265,12 +326,15 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
               id="triageNotes"
               placeholder="Additional observations..."
               {...form.register("triageNotes")}
-              disabled={isDisabled}
+              disabled={isFormDisabled}
               rows={2}
             />
+            {errors.triageNotes && (
+              <p className="text-sm text-destructive">{errors.triageNotes.message}</p>
+            )}
           </div>
 
-          <Button type="submit" disabled={isDisabled} className="w-full">
+          <Button type="submit" disabled={isSubmitDisabled} className="w-full">
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Complete Triage
           </Button>
