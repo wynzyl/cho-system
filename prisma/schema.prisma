@@ -69,6 +69,16 @@ enum AuditAction {
   OVERRIDE
 }
 
+enum DiagnosisCategory {
+  INFECTIOUS
+  NOTIFIABLE_DISEASE
+  ANIMAL_BITE
+  CHRONIC
+  MATERNAL
+  MATERNAL_CHILD
+  TRAUMA
+}
+
 model Facility {
   id       String       @id @default(uuid())
   code     String       @unique
@@ -290,6 +300,9 @@ model Diagnosis {
 
   text String
 
+  diagnosisCodeId String?
+  diagnosisCode   DiagnosisCode? @relation(fields: [diagnosisCodeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
   createdAt   DateTime @default(now())
   createdById String?
   createdBy   User?    @relation("DiagnosisCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: Cascade)
@@ -302,6 +315,7 @@ model Diagnosis {
 
   @@index([encounterId])
   @@index([createdAt])
+  @@index([diagnosisCodeId])
 }
 
 model Prescription {
@@ -446,6 +460,26 @@ model LabResult {
   @@index([labOrderId])
   @@index([performingFacilityId])
   @@index([uploadedAt])
+}
+
+model DiagnosisCode {
+  id               String            @id @default(uuid())
+  icd10Code        String            @unique @db.VarChar(10)
+  title            String
+  category         DiagnosisCategory
+  isNotifiable     Boolean           @default(false)
+  requiresLab      Boolean           @default(false)
+  requiresReferral Boolean           @default(false)
+  isAnimalBiteCase Boolean           @default(false)
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  diagnoses        Diagnosis[]
+
+  @@index([category])
+  @@index([isNotifiable])
+  @@index([isActive])
+  @@index([isAnimalBiteCase])
 }
 
 model Medicine {
