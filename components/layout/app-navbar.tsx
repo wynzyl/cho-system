@@ -17,7 +17,7 @@ export function AppNavbar({ session, facility }: AppNavbarProps) {
       <div className="flex h-full items-center justify-between px-4">
         <div className="flex items-center gap-3">
           <MobileSidebar role={session.role} />
-          <span className="font-semibold">CHO System</span>
+          <span className="font-semibold">Urdaneta City Health Office System</span>
         </div>
 
         <div className="hidden md:flex items-center">
