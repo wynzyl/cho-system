@@ -1,0 +1,14 @@
+-- CreateEnum
+CREATE TYPE "CivilStatus" AS ENUM ('SINGLE', 'MARRIED', 'WIDOWED', 'SEPARATED', 'ANNULLED', 'UNKNOWN');
+
+-- CreateEnum
+CREATE TYPE "Religion" AS ENUM ('ROMAN_CATHOLIC', 'PROTESTANT', 'IGLESIA_NI_CRISTO', 'ISLAM', 'BUDDHIST', 'OTHER', 'NONE', 'UNKNOWN');
+
+-- CreateEnum
+CREATE TYPE "EducationLevel" AS ENUM ('NO_FORMAL', 'ELEMENTARY', 'JUNIOR_HIGH', 'SENIOR_HIGH', 'VOCATIONAL', 'COLLEGE', 'POSTGRADUATE', 'UNKNOWN');
+
+-- AlterTable
+ALTER TABLE "Patient" ADD COLUMN     "civilStatus" "CivilStatus" DEFAULT 'UNKNOWN',
+ADD COLUMN     "education" "EducationLevel" DEFAULT 'UNKNOWN',
+ADD COLUMN     "occupation" TEXT,
+ADD COLUMN     "religion" "Religion" DEFAULT 'UNKNOWN';

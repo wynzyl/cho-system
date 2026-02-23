@@ -2,7 +2,7 @@
 
 import { Prisma } from "@prisma/client"
 import { db } from "@/lib/db"
-import { requireSessionForAction } from "@/lib/auth/guards"
+import { requireRoleForAction } from "@/lib/auth/guards"
 import type { ActionResult } from "@/lib/auth/types"
 import {
   searchSubcategoriesSchema,
@@ -34,7 +34,7 @@ export type SubcategorySearchResult = {
 export async function searchSubcategoriesAction(
   input?: Partial<SearchSubcategoriesInput>
 ): Promise<ActionResult<SubcategorySearchResult[]>> {
-  await requireSessionForAction()
+  await requireRoleForAction(["DOCTOR"])
 
   const parsed = searchSubcategoriesSchema.safeParse(input ?? {})
   if (!parsed.success) {

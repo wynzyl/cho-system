@@ -160,7 +160,7 @@ Implemented a 3-layer diagnosis taxonomy with ICD-10 mapping:
 
 ## Test Users
 
-All passwords: `Password123!`
+
 
 | Email | Role | Facility |
 |-------|------|----------|

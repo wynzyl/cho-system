@@ -83,6 +83,11 @@ import { AuthError, AuthErrorCode } from "@/lib/auth/guards"
 // Use: catch (e) { if (e instanceof AuthError && e.code === "UNAUTHORIZED") ... }
 ```
 
+## UI Design
+
+## Always do first
+- Invoke the frontend-design skills before writing any frontend code, every session, no exceptions.
+
 ## Database Rules
 
 - Core flow: PATIENT → ENCOUNTER → ACTION
@@ -212,7 +217,7 @@ No “Add Patient” button here.
 
 Only select from Patients/status=WAIT_TRIAGE.
 
-D) APPOINTMENTS (Doctor-only assigned)
+D) APPOINTMENTS 
 
 Purpose: The logged-in doctor sees only assigned appointments.
 

@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { requireSessionForAction } from "@/lib/auth/guards"
+import { requireRoleForAction } from "@/lib/auth/guards"
 import type { ActionResult } from "@/lib/auth/types"
 import { getCategoriesSchema, type GetCategoriesInput } from "@/lib/validators/diagnosis"
 
@@ -35,7 +35,7 @@ export type CategoryWithSubcategories = {
 export async function getCategoriesAction(
   input?: Partial<GetCategoriesInput>
 ): Promise<ActionResult<CategoryWithSubcategories[]>> {
-  await requireSessionForAction()
+  await requireRoleForAction(["DOCTOR"])
 
   const parsed = getCategoriesSchema.safeParse(input ?? {})
   if (!parsed.success) {
