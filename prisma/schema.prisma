@@ -32,6 +32,37 @@ enum Sex {
   UNKNOWN
 }
 
+enum CivilStatus {
+  SINGLE
+  MARRIED
+  WIDOWED
+  SEPARATED
+  ANNULLED
+  UNKNOWN
+}
+
+enum Religion {
+  ROMAN_CATHOLIC
+  PROTESTANT
+  IGLESIA_NI_CRISTO
+  ISLAM
+  BUDDHIST
+  OTHER
+  NONE
+  UNKNOWN
+}
+
+enum EducationLevel {
+  NO_FORMAL
+  ELEMENTARY
+  JUNIOR_HIGH
+  SENIOR_HIGH
+  VOCATIONAL
+  COLLEGE
+  POSTGRADUATE
+  UNKNOWN
+}
+
 enum EncounterStatus {
   WAIT_TRIAGE
   TRIAGED
@@ -149,6 +180,9 @@ model User {
   stockLotDeletedBy       StockLot[]         @relation("StockLotDeletedBy")
   inventoryTxnDeletedBy   InventoryTxn[]     @relation("InventoryTxnDeletedBy")
   dispenseTxnDeletedBy    DispenseTxn[]      @relation("DispenseTxnDeletedBy")
+  diagnosisCategoryDeletedBy    DiagnosisCategory[]    @relation("DiagnosisCategoryDeletedBy")
+  diagnosisSubcategoryDeletedBy DiagnosisSubcategory[] @relation("DiagnosisSubcategoryDeletedBy")
+  diagnosisIcdMapDeletedBy      DiagnosisIcdMap[]      @relation("DiagnosisIcdMapDeletedBy")
 
   // Inverse relations for "createdBy" / "recordedBy"
   diagnosisCreatedBy      Diagnosis[]    @relation("DiagnosisCreatedBy")
@@ -185,6 +219,11 @@ model Patient {
   lastName   String
   birthDate  DateTime
   sex        Sex      @default(UNKNOWN)
+
+  civilStatus CivilStatus?    @default(UNKNOWN)
+  religion    Religion?       @default(UNKNOWN)
+  education   EducationLevel? @default(UNKNOWN)
+  occupation  String?
 
   phone       String?
   addressLine String?
@@ -290,6 +329,10 @@ model Diagnosis {
 
   text String
 
+  // Optional link to taxonomy (null = custom/free-text diagnosis)
+  subcategoryId String?
+  subcategory   DiagnosisSubcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
   createdAt   DateTime @default(now())
   createdById String?
   createdBy   User?    @relation("DiagnosisCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: Cascade)
@@ -302,6 +345,7 @@ model Diagnosis {
 
   @@index([encounterId])
   @@index([createdAt])
+  @@index([subcategoryId])
 }
 
 model Prescription {
@@ -631,4 +675,79 @@ model AuditLog {
   @@index([createdAt])
   @@index([userId])
   @@index([entity, entityId])
+}
+
+// ============================================================================
+// DIAGNOSIS TAXONOMY (3-Layer: Category → Subcategory → ICD-10 Mapping)
+// ============================================================================
+
+model DiagnosisCategory {
+  id          String   @id @default(uuid())
+  code        String   @unique // e.g., "TROPICAL", "CHRONIC"
+  name        String            // e.g., "Vector-Borne & Tropical Diseases"
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("DiagnosisCategoryDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  subcategories DiagnosisSubcategory[]
+
+  @@index([isActive])
+  @@index([sortOrder])
+  @@index([deletedAt])
+}
+
+model DiagnosisSubcategory {
+  id           String            @id @default(uuid())
+  categoryId   String
+  category     DiagnosisCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  code         String            @unique // e.g., "DENGUE", "HYPERTENSION"
+  name         String                     // e.g., "Dengue Fever"
+  description  String?
+  isNotifiable Boolean           @default(false)
+  isAnimalBite Boolean           @default(false)
+  sortOrder    Int               @default(0)
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("DiagnosisSubcategoryDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  icdMappings DiagnosisIcdMap[]
+  diagnoses   Diagnosis[]
+
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([isNotifiable])
+  @@index([isAnimalBite])
+  @@index([deletedAt])
+}
+
+model DiagnosisIcdMap {
+  id            String               @id @default(uuid())
+  subcategoryId String
+  subcategory   DiagnosisSubcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  icd10Code     String               // e.g., "A90", "I10"
+  icdTitle      String               // e.g., "Dengue Fever", "Essential Hypertension"
+  isDefault     Boolean              @default(false) // Default ICD code for this subcategory
+  isActive      Boolean              @default(true)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("DiagnosisIcdMapDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  @@unique([subcategoryId, icd10Code])
+  @@index([icd10Code])
+  @@index([subcategoryId])
+  @@index([isActive])
+  @@index([deletedAt])
 }

@@ -1,10 +1,10 @@
 import { z } from "zod"
 
 // Note: Queue filtering happens client-side since it's a small daily list
-export const getTriageQueueSchema = z.object({}).strict()
+export const getTriageQueueSchema = z.strictObject({})
 
-export const submitTriageSchema = z.object({
-  encounterId: z.string().uuid("Invalid encounter ID"),
+export const submitTriageSchema = z.strictObject({
+  encounterId: z.uuid("Invalid encounter ID"),
 
   // Vitals (all optional, stored in metric)
   bpSystolic: z.number().int().min(50).max(300).optional().nullable(),
@@ -19,7 +19,7 @@ export const submitTriageSchema = z.object({
   // Encounter fields
   chiefComplaint: z.string().max(500).optional().nullable(),
   triageNotes: z.string().max(2000).optional().nullable(),
-}).strict()
+})
 
 export type GetTriageQueueInput = z.infer<typeof getTriageQueueSchema>
 export type SubmitTriageInput = z.infer<typeof submitTriageSchema>

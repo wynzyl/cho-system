@@ -16,14 +16,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   createPatientAction,
   updatePatientAction,
   getBarangaysAction,
   type BarangayOption,
 } from "@/actions/patients"
-import { Loader2 } from "lucide-react"
+import {
+  CIVIL_STATUS_OPTIONS,
+  RELIGION_OPTIONS,
+  EDUCATION_OPTIONS,
+} from "@/lib/constants"
+import {
+  Loader2,
+  User,
+  Calendar,
+  Heart,
+  MapPin,
+  Phone,
+  FileText,
+  Briefcase,
+  GraduationCap,
+  X,
+  Save,
+  UserPlus,
+} from "lucide-react"
 
 // Form schema - uses string for date input from HTML date picker
 const patientFormSchema = z.object({
@@ -31,11 +48,15 @@ const patientFormSchema = z.object({
   middleName: z.string().max(100).optional(),
   lastName: z.string().min(1, "Last name is required").max(100),
   birthDate: z.string().min(1, "Birth date is required"),
-  sex: z.enum(["MALE", "FEMALE", "OTHER", "UNKNOWN"]),
-  phone: z.string().max(20).optional(),
+  sex: z.enum(["MALE", "FEMALE", "OTHER"], { message: "Sex is required" }),
+  civilStatus: z.enum(["SINGLE", "MARRIED", "WIDOWED", "SEPARATED", "ANNULLED"], { message: "Civil status is required" }),
+  religion: z.enum(["ROMAN_CATHOLIC", "PROTESTANT", "IGLESIA_NI_CRISTO", "ISLAM", "BUDDHIST", "OTHER", "NONE", "UNKNOWN"]),
+  education: z.enum(["NO_FORMAL", "ELEMENTARY", "JUNIOR_HIGH", "SENIOR_HIGH", "VOCATIONAL", "COLLEGE", "POSTGRADUATE", "UNKNOWN"]),
+  occupation: z.string().max(100).optional(),
+  phone: z.string().min(1, "Phone number is required").max(20),
   philhealthNo: z.string().max(20).optional(),
   addressLine: z.string().max(255).optional(),
-  barangayId: z.string().uuid().optional().nullable(),
+  barangayId: z.string().uuid("Barangay is required"),
   notes: z.string().max(1000).optional(),
 })
 
@@ -51,7 +72,12 @@ interface PatientFormProps {
     middleName?: string
     lastName?: string
     birthDate?: Date | string
+    // Allow UNKNOWN for existing records, but form will require valid selection
     sex?: "MALE" | "FEMALE" | "OTHER" | "UNKNOWN"
+    civilStatus?: "SINGLE" | "MARRIED" | "WIDOWED" | "SEPARATED" | "ANNULLED" | "UNKNOWN" | null
+    religion?: "ROMAN_CATHOLIC" | "PROTESTANT" | "IGLESIA_NI_CRISTO" | "ISLAM" | "BUDDHIST" | "OTHER" | "NONE" | "UNKNOWN" | null
+    education?: "NO_FORMAL" | "ELEMENTARY" | "JUNIOR_HIGH" | "SENIOR_HIGH" | "VOCATIONAL" | "COLLEGE" | "POSTGRADUATE" | "UNKNOWN" | null
+    occupation?: string
     phone?: string
     philhealthNo?: string
     addressLine?: string
@@ -65,6 +91,47 @@ function formatDateForInput(date: Date | string | undefined): string {
   if (!date) return ""
   const d = typeof date === "string" ? new Date(date) : date
   return d.toISOString().split("T")[0]
+}
+
+// Section header component
+function SectionHeader({
+  icon: Icon,
+  title,
+  delay = 0,
+}: {
+  icon: React.ElementType
+  title: string
+  delay?: number
+}) {
+  return (
+    <div
+      className="clinical-section-header clinical-animate-in mb-4"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      <span>{title}</span>
+    </div>
+  )
+}
+
+// Form field wrapper with animation
+function FormField({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode
+  delay?: number
+  className?: string
+}) {
+  return (
+    <div
+      className={`clinical-animate-in space-y-2 ${className}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  )
 }
 
 export function PatientForm({
@@ -85,11 +152,20 @@ export function PatientForm({
       middleName: defaultValues?.middleName ?? "",
       lastName: defaultValues?.lastName ?? "",
       birthDate: formatDateForInput(defaultValues?.birthDate),
-      sex: defaultValues?.sex ?? "UNKNOWN",
+      // Treat UNKNOWN as undefined to show placeholder and require selection
+      sex: defaultValues?.sex === "UNKNOWN" ? undefined : defaultValues?.sex,
+      civilStatus:
+        defaultValues?.civilStatus &&
+        defaultValues.civilStatus !== "UNKNOWN"
+          ? defaultValues.civilStatus
+          : undefined,
+      religion: defaultValues?.religion ?? "UNKNOWN",
+      education: defaultValues?.education ?? "UNKNOWN",
+      occupation: defaultValues?.occupation ?? "",
       phone: defaultValues?.phone ?? "",
       philhealthNo: defaultValues?.philhealthNo ?? "",
       addressLine: defaultValues?.addressLine ?? "",
-      barangayId: defaultValues?.barangayId ?? null,
+      barangayId: defaultValues?.barangayId ?? "",
       notes: defaultValues?.notes ?? "",
     },
   })
@@ -162,170 +238,392 @@ export function PatientForm({
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
-      <Card>
-        <CardContent className="space-y-6 pt-6">
-          {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      {/* Main form card */}
+      <div className="clinical-card rounded-xl border border-border/50 p-6">
+        {/* Error display */}
+        {error && (
+          <div className="clinical-animate-in mb-6 flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-8">
+          {/* Identity Section */}
+          <section className="clinical-section pl-5">
+            <SectionHeader icon={User} title="Patient Identity" delay={50} />
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <FormField delay={100}>
+                <Label htmlFor="firstName" className="text-sm font-medium">
+                  First Name <span className="clinical-required">*</span>
+                </Label>
+                <div className="clinical-input rounded-md">
+                  <Input
+                    id="firstName"
+                    {...form.register("firstName")}
+                    aria-invalid={!!form.formState.errors.firstName}
+                    className="bg-input/50 border-border/60 focus-visible:border-primary/60"
+                    placeholder="Juan"
+                  />
+                </div>
+                {form.formState.errors.firstName && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <span className="h-1 w-1 rounded-full bg-destructive" />
+                    {form.formState.errors.firstName.message}
+                  </p>
+                )}
+              </FormField>
+
+              <FormField delay={150}>
+                <Label htmlFor="middleName" className="text-sm font-medium text-muted-foreground">
+                  Middle Name
+                </Label>
+                <div className="clinical-input rounded-md">
+                  <Input
+                    id="middleName"
+                    {...form.register("middleName")}
+                    className="bg-input/50 border-border/60 focus-visible:border-primary/60"
+                    placeholder="Santos"
+                  />
+                </div>
+              </FormField>
+
+              <FormField delay={200}>
+                <Label htmlFor="lastName" className="text-sm font-medium">
+                  Last Name <span className="clinical-required">*</span>
+                </Label>
+                <div className="clinical-input rounded-md">
+                  <Input
+                    id="lastName"
+                    {...form.register("lastName")}
+                    aria-invalid={!!form.formState.errors.lastName}
+                    className="bg-input/50 border-border/60 focus-visible:border-primary/60"
+                    placeholder="Dela Cruz"
+                  />
+                </div>
+                {form.formState.errors.lastName && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <span className="h-1 w-1 rounded-full bg-destructive" />
+                    {form.formState.errors.lastName.message}
+                  </p>
+                )}
+              </FormField>
             </div>
+          </section>
+
+          {/* Demographics Section */}
+          <section className="clinical-section pl-5">
+            <SectionHeader icon={Calendar} title="Demographics" delay={250} />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField delay={300}>
+                <Label htmlFor="birthDate" className="text-sm font-medium">
+                  Birth Date <span className="clinical-required">*</span>
+                </Label>
+                <div className="clinical-input rounded-md">
+                  <Input
+                    id="birthDate"
+                    type="date"
+                    {...form.register("birthDate")}
+                    aria-invalid={!!form.formState.errors.birthDate}
+                    className="bg-input/50 border-border/60 focus-visible:border-primary/60"
+                  />
+                </div>
+                {form.formState.errors.birthDate && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <span className="h-1 w-1 rounded-full bg-destructive" />
+                    {form.formState.errors.birthDate.message}
+                  </p>
+                )}
+              </FormField>
+
+              <FormField delay={350}>
+                <Label htmlFor="sex" className="text-sm font-medium">
+                  Sex <span className="clinical-required">*</span>
+                </Label>
+                <Select
+                  value={form.watch("sex") ?? ""}
+                  onValueChange={(value) =>
+                    form.setValue("sex", value as PatientFormData["sex"])
+                  }
+                >
+                  <SelectTrigger className="bg-input/50 border-border/60 focus:border-primary/60 focus:ring-primary/20">
+                    <SelectValue placeholder="Select sex" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MALE">Male</SelectItem>
+                    <SelectItem value="FEMALE">Female</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.sex && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <span className="h-1 w-1 rounded-full bg-destructive" />
+                    {form.formState.errors.sex.message}
+                  </p>
+                )}
+              </FormField>
+            </div>
+          </section>
+
+          {/* Civil Status & Personal Info Section */}
+          <section className="clinical-section pl-5">
+            <SectionHeader icon={Heart} title="Personal Information" delay={400} />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField delay={450}>
+                <Label htmlFor="civilStatus" className="text-sm font-medium">
+                  Civil Status <span className="clinical-required">*</span>
+                </Label>
+                <Select
+                  value={form.watch("civilStatus") ?? ""}
+                  onValueChange={(value) =>
+                    form.setValue("civilStatus", value as PatientFormData["civilStatus"])
+                  }
+                >
+                  <SelectTrigger className="bg-input/50 border-border/60 focus:border-primary/60 focus:ring-primary/20">
+                    <SelectValue placeholder="Select civil status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CIVIL_STATUS_OPTIONS.filter(opt => opt.value !== "UNKNOWN").map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.civilStatus && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <span className="h-1 w-1 rounded-full bg-destructive" />
+                    {form.formState.errors.civilStatus.message}
+                  </p>
+                )}
+              </FormField>
+
+              <FormField delay={500}>
+                <Label htmlFor="religion" className="text-sm font-medium text-muted-foreground">
+                  Religion
+                </Label>
+                <Select
+                  value={form.watch("religion")}
+                  onValueChange={(value) =>
+                    form.setValue("religion", value as PatientFormData["religion"])
+                  }
+                >
+                  <SelectTrigger className="bg-input/50 border-border/60 focus:border-primary/60 focus:ring-primary/20">
+                    <SelectValue placeholder="Select religion" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RELIGION_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            </div>
+          </section>
+
+          {/* Education & Occupation Section */}
+          <section className="clinical-section pl-5">
+            <SectionHeader icon={GraduationCap} title="Education & Employment" delay={550} />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField delay={600}>
+                <Label htmlFor="education" className="text-sm font-medium text-muted-foreground">
+                  Education Level
+                </Label>
+                <Select
+                  value={form.watch("education")}
+                  onValueChange={(value) =>
+                    form.setValue("education", value as PatientFormData["education"])
+                  }
+                >
+                  <SelectTrigger className="bg-input/50 border-border/60 focus:border-primary/60 focus:ring-primary/20">
+                    <SelectValue placeholder="Select education level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EDUCATION_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+
+              <FormField delay={650}>
+                <Label htmlFor="occupation" className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Briefcase className="h-3 w-3" />
+                  Occupation
+                </Label>
+                <div className="clinical-input rounded-md">
+                  <Input
+                    id="occupation"
+                    placeholder="e.g., Teacher, Farmer, Engineer"
+                    {...form.register("occupation")}
+                    className="bg-input/50 border-border/60 focus-visible:border-primary/60"
+                  />
+                </div>
+              </FormField>
+            </div>
+          </section>
+
+          {/* Contact Section */}
+          <section className="clinical-section pl-5">
+            <SectionHeader icon={Phone} title="Contact Information" delay={700} />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField delay={750}>
+                <Label htmlFor="phone" className="text-sm font-medium">
+                  Phone Number <span className="clinical-required">*</span>
+                </Label>
+                <div className="clinical-input rounded-md">
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="09XX-XXX-XXXX"
+                    {...form.register("phone")}
+                    aria-invalid={!!form.formState.errors.phone}
+                    className="bg-input/50 border-border/60 focus-visible:border-primary/60 font-mono tracking-wide"
+                  />
+                </div>
+                {form.formState.errors.phone && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <span className="h-1 w-1 rounded-full bg-destructive" />
+                    {form.formState.errors.phone.message}
+                  </p>
+                )}
+              </FormField>
+
+              <FormField delay={800}>
+                <Label htmlFor="philhealthNo" className="text-sm font-medium text-muted-foreground">
+                  PhilHealth Number
+                </Label>
+                <div className="clinical-input rounded-md">
+                  <Input
+                    id="philhealthNo"
+                    placeholder="XX-XXXXXXXXX-X"
+                    {...form.register("philhealthNo")}
+                    className="bg-input/50 border-border/60 focus-visible:border-primary/60 font-mono tracking-wide"
+                  />
+                </div>
+              </FormField>
+            </div>
+          </section>
+
+          {/* Address Section */}
+          <section className="clinical-section pl-5">
+            <SectionHeader icon={MapPin} title="Address" delay={850} />
+
+            <div className="space-y-4">
+              <FormField delay={900}>
+                <Label htmlFor="barangayId" className="text-sm font-medium">
+                  Barangay <span className="clinical-required">*</span>
+                </Label>
+                <Select
+                  value={form.watch("barangayId") ?? ""}
+                  onValueChange={(value) =>
+                    form.setValue("barangayId", value)
+                  }
+                >
+                  <SelectTrigger className="bg-input/50 border-border/60 focus:border-primary/60 focus:ring-primary/20">
+                    <SelectValue placeholder="Select barangay" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {barangays.map((brgy) => (
+                      <SelectItem key={brgy.id} value={brgy.id}>
+                        {brgy.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.barangayId && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <span className="h-1 w-1 rounded-full bg-destructive" />
+                    {form.formState.errors.barangayId.message}
+                  </p>
+                )}
+              </FormField>
+
+              <FormField delay={950}>
+                <Label htmlFor="addressLine" className="text-sm font-medium text-muted-foreground">
+                  Street Address
+                </Label>
+                <div className="clinical-input rounded-md">
+                  <Input
+                    id="addressLine"
+                    placeholder="House No., Street, Purok, etc."
+                    {...form.register("addressLine")}
+                    className="bg-input/50 border-border/60 focus-visible:border-primary/60"
+                  />
+                </div>
+              </FormField>
+            </div>
+          </section>
+
+          {/* Notes Section */}
+          <section className="clinical-section pl-5">
+            <SectionHeader icon={FileText} title="Additional Notes" delay={1000} />
+
+            <FormField delay={1050}>
+              <div className="clinical-input rounded-md">
+                <Textarea
+                  id="notes"
+                  placeholder="Medical history, allergies, special instructions..."
+                  {...form.register("notes")}
+                  rows={3}
+                  className="bg-input/50 border-border/60 focus-visible:border-primary/60 resize-none"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Include any relevant medical history or special considerations
+              </p>
+            </FormField>
+          </section>
+        </div>
+      </div>
+
+      {/* Action buttons - outside the card */}
+      <div
+        className="clinical-animate-in flex items-center gap-3"
+        style={{ animationDelay: "1100ms" }}
+      >
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="clinical-button-primary h-11 px-6 text-sm font-semibold tracking-wide"
+        >
+          {isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : mode === "create" ? (
+            <UserPlus className="mr-2 h-4 w-4" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
           )}
+          {mode === "create" ? "Register Patient" : "Save Changes"}
+        </Button>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">
-                First Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="firstName"
-                {...form.register("firstName")}
-                aria-invalid={!!form.formState.errors.firstName}
-              />
-              {form.formState.errors.firstName && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.firstName.message}
-                </p>
-              )}
-            </div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.back()}
+          disabled={isPending}
+          className="h-11 px-6 border-border/60 hover:bg-accent/50 hover:border-border"
+        >
+          <X className="mr-2 h-4 w-4" />
+          Cancel
+        </Button>
 
-            <div className="space-y-2">
-              <Label htmlFor="middleName">Middle Name</Label>
-              <Input id="middleName" {...form.register("middleName")} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="lastName">
-                Last Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="lastName"
-                {...form.register("lastName")}
-                aria-invalid={!!form.formState.errors.lastName}
-              />
-              {form.formState.errors.lastName && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.lastName.message}
-                </p>
-              )}
-            </div>
+        {mode === "edit" && (
+          <div className="ml-auto text-xs text-muted-foreground">
+            Changes are saved immediately after submission
           </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="birthDate">
-                Birth Date <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="birthDate"
-                type="date"
-                {...form.register("birthDate")}
-                aria-invalid={!!form.formState.errors.birthDate}
-              />
-              {form.formState.errors.birthDate && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.birthDate.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="sex">Sex</Label>
-              <Select
-                value={form.watch("sex")}
-                onValueChange={(value) =>
-                  form.setValue("sex", value as PatientFormData["sex"])
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select sex" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MALE">Male</SelectItem>
-                  <SelectItem value="FEMALE">Female</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
-                  <SelectItem value="UNKNOWN">Unknown</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="09XX-XXX-XXXX"
-                {...form.register("phone")}
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="philhealthNo">PhilHealth Number</Label>
-              <Input
-                id="philhealthNo"
-                placeholder="XX-XXXXXXXXX-X"
-                {...form.register("philhealthNo")}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="barangayId">Barangay</Label>
-              <Select
-                value={form.watch("barangayId") ?? ""}
-                onValueChange={(value) =>
-                  form.setValue("barangayId", value || null)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select barangay" />
-                </SelectTrigger>
-                <SelectContent>
-                  {barangays.map((brgy) => (
-                    <SelectItem key={brgy.id} value={brgy.id}>
-                      {brgy.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="addressLine">Address Line</Label>
-            <Input
-              id="addressLine"
-              placeholder="Street, House No., etc."
-              {...form.register("addressLine")}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              placeholder="Additional notes about the patient..."
-              {...form.register("notes")}
-              rows={3}
-            />
-          </div>
-
-          <div className="flex gap-4">
-            <Button type="submit" disabled={isPending}>
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {mode === "create" ? "Create Patient" : "Save Changes"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </form>
   )
 }
