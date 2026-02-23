@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
 import { Pool } from "pg"
 import bcrypt from "bcrypt"
-import { BARANGAY_DATA, DIAGNOSIS_CODE_DATA } from "@/lib/constants"
+import { BARANGAY_DATA } from "@/lib/constants"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
@@ -40,29 +40,6 @@ async function main() {
     })
   }
   console.log(`Seeded ${BARANGAY_DATA.length} barangays`)
-
-  /*
-    -------------------------------------------------------
-    DIAGNOSIS CODES (ICD-10)
-    -------------------------------------------------------
-  */
-
-  console.log("Seeding diagnosis codes...")
-  for (const code of DIAGNOSIS_CODE_DATA) {
-    await prisma.diagnosisCode.upsert({
-      where: { icd10Code: code.icd10Code },
-      update: {
-        title: code.title,
-        category: code.category,
-        isNotifiable: code.isNotifiable,
-        requiresLab: code.requiresLab,
-        requiresReferral: code.requiresReferral,
-        isAnimalBiteCase: code.isAnimalBiteCase,
-      },
-      create: code,
-    })
-  }
-  console.log(`Seeded ${DIAGNOSIS_CODE_DATA.length} diagnosis codes`)
 
   /*
     -------------------------------------------------------

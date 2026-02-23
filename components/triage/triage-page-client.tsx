@@ -99,7 +99,7 @@ export function TriagePageClient() {
       )}
 
       {/* Main Content - Two Panel Layout */}
-      <div className="mt-6 grid flex-1 gap-6 lg:grid-cols-[1fr_400px]">
+      <div className="mt-6 grid flex-1 gap-6 lg:grid-cols-[1fr_600px]">
         {/* Left Panel - Queue */}
         <div className="min-h-0 overflow-hidden rounded-lg border bg-card p-4">
           <TriageQueue
