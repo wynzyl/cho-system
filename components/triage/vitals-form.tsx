@@ -353,7 +353,7 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label htmlFor="triageNotes">Notes (Optional)</Label>
+            <Label htmlFor="triageNotes">Assessment Notes (Optional)</Label>
             <Textarea
               id="triageNotes"
               placeholder="Additional observations..."
