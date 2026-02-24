@@ -7,12 +7,18 @@ export {
   CIVIL_STATUS_OPTIONS,
   RELIGION_OPTIONS,
   EDUCATION_OPTIONS,
+  BLOOD_TYPE_OPTIONS,
 } from "./patient"
 export type {
   CivilStatusValue,
   ReligionValue,
   EducationValue,
+  BloodTypeValue,
 } from "./patient"
+
+// PhilHealth constants
+export { PHILHEALTH_MEMBERSHIP_TYPE_OPTIONS } from "./philhealth"
+export type { PhilHealthMembershipTypeValue } from "./philhealth"
 
 // Diagnosis taxonomy constants
 export {

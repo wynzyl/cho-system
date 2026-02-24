@@ -29,6 +29,19 @@ export const EDUCATION_OPTIONS = [
   { value: "UNKNOWN", label: "Unknown" },
 ] as const
 
+export const BLOOD_TYPE_OPTIONS = [
+  { value: "A_POSITIVE", label: "A+" },
+  { value: "A_NEGATIVE", label: "A-" },
+  { value: "B_POSITIVE", label: "B+" },
+  { value: "B_NEGATIVE", label: "B-" },
+  { value: "AB_POSITIVE", label: "AB+" },
+  { value: "AB_NEGATIVE", label: "AB-" },
+  { value: "O_POSITIVE", label: "O+" },
+  { value: "O_NEGATIVE", label: "O-" },
+  { value: "UNKNOWN", label: "Unknown" },
+] as const
+
 export type CivilStatusValue = (typeof CIVIL_STATUS_OPTIONS)[number]["value"]
 export type ReligionValue = (typeof RELIGION_OPTIONS)[number]["value"]
 export type EducationValue = (typeof EDUCATION_OPTIONS)[number]["value"]
+export type BloodTypeValue = (typeof BLOOD_TYPE_OPTIONS)[number]["value"]

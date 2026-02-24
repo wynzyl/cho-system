@@ -1,6 +1,6 @@
 # CHO System - Project Status
 
-**Last Updated:** February 23, 2026
+**Last Updated:** February 24, 2026
 
 ## Overview
 
@@ -46,6 +46,7 @@ CHO (City Health Office) System is a medical records and clinic management syste
 | Edit patient | Done | Update patient details |
 | View patient details | Done | `/patients/[id]` route |
 | Barangay selection | Done | 34 Urdaneta barangays seeded |
+| PhilHealth registration data | Done | Membership type, eligibility dates, principal PIN, validation, detail card |
 | Forward to triage | Done | Creates encounter with WAIT_TRIAGE status |
 
 #### 2. Triage (TRIAGE role)
