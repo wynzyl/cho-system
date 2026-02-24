@@ -243,6 +243,7 @@ export function PatientDetailView({
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 ring-1 ring-primary/20">
             <User className="h-8 w-8 text-primary/60" />
           </div>
+          {/* Patient Name & Info */}
           <div>
             <div className="clinical-code mb-2 inline-block text-xs">
               {patient.patientCode}
@@ -273,6 +274,7 @@ export function PatientDetailView({
               )}
             </div>
           </div>
+          {/* end of patient name & info */}
         </div>
 
         <div className="flex gap-2">
