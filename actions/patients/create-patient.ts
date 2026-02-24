@@ -46,7 +46,7 @@ export async function createPatientAction(
         patientCode,
         firstName: data.firstName.trim(),
         middleName: emptyToNull(data.middleName),
-        lastName: data.lastName.trim(),
+        lastName: data.lastName.toUpperCase().trim(),
         birthDate: data.birthDate,
         sex: data.sex,
         civilStatus: data.civilStatus || null,

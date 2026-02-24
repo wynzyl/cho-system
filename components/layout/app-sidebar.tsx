@@ -85,7 +85,7 @@ export function AppSidebar({ role, onNavigate }: AppSidebarProps) {
   const visibleItems = navItems.filter((item) => item.roles.includes(role))
 
   return (
-    <nav className="flex flex-col gap-1 p-4">
+    <nav className="flex flex-col gap-1 p-3">
       {visibleItems.map((item) => {
         const isActive =
           pathname === item.href ||

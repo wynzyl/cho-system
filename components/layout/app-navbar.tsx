@@ -2,6 +2,8 @@ import { SessionUser } from "@/lib/auth/types"
 import { Badge } from "@/components/ui/badge"
 import { MobileSidebar } from "./mobile-sidebar"
 import { UserMenu } from "./user-menu"
+import Link from "next/link"
+import Image from "next/image"
 
 interface AppNavbarProps {
   session: SessionUser
@@ -17,6 +19,9 @@ export function AppNavbar({ session, facility }: AppNavbarProps) {
       <div className="flex h-full items-center justify-between px-4">
         <div className="flex items-center gap-3">
           <MobileSidebar role={session.role} />
+          <Link href="/">
+            <Image src="/UCHOlogo.jpg" alt="Urdaneta City Health Office System" width={32} height={32} className="rounded-full" />
+          </Link>
           <span className="font-semibold">Urdaneta City Health Office System</span>
         </div>
 
