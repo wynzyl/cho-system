@@ -19,6 +19,8 @@ import {
   CIVIL_STATUS_OPTIONS,
   RELIGION_OPTIONS,
   EDUCATION_OPTIONS,
+  BLOOD_TYPE_OPTIONS,
+  PHILHEALTH_MEMBERSHIP_TYPE_OPTIONS,
 } from "@/lib/constants"
 import {
   Pencil,
@@ -34,8 +36,12 @@ import {
   Heart,
   GraduationCap,
   Briefcase,
+  Droplet,
   Clock,
   Activity,
+  Shield,
+  CalendarRange,
+  Users,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -179,9 +185,14 @@ export function PatientDetailView({
               civilStatus: patient.civilStatus,
               religion: patient.religion,
               education: patient.education,
+              bloodType: patient.bloodType,
               occupation: patient.occupation ?? undefined,
               phone: patient.phone ?? undefined,
               philhealthNo: patient.philhealthNo ?? undefined,
+              philhealthMembershipType: patient.philhealthMembershipType,
+              philhealthEligibilityStart: patient.philhealthEligibilityStart,
+              philhealthEligibilityEnd: patient.philhealthEligibilityEnd,
+              philhealthPrincipalPin: patient.philhealthPrincipalPin,
               addressLine: patient.addressLine ?? undefined,
               barangayId: patient.barangayId,
               notes: patient.notes ?? undefined,
@@ -240,7 +251,7 @@ export function PatientDetailView({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4">
           {/* Avatar placeholder */}
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 ring-1 ring-primary/20">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary/20 to-primary/5 ring-1 ring-primary/20">
             <User className="h-8 w-8 text-primary/60" />
           </div>
           {/* Patient Name & Info */}
@@ -312,20 +323,14 @@ export function PatientDetailView({
 
       {/* Patient info cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Contact & ID Card */}
+        {/* Contact Card */}
         <div className="clinical-card rounded-xl border border-border/50 p-5">
           <h3 className="clinical-section-header mb-4">
             <Phone className="h-3.5 w-3.5" />
-            Contact & ID
+            Contact
           </h3>
           <div className="space-y-1">
             <InfoRow icon={Phone} label="Phone" value={patient.phone} mono />
-            <InfoRow
-              icon={CreditCard}
-              label="PhilHealth"
-              value={patient.philhealthNo}
-              mono
-            />
           </div>
         </div>
 
@@ -355,6 +360,11 @@ export function PatientDetailView({
               value={formatEnumLabel(patient.religion, RELIGION_OPTIONS)}
             />
             <InfoRow
+              icon={Droplet}
+              label="Blood Type"
+              value={formatEnumLabel(patient.bloodType, BLOOD_TYPE_OPTIONS)}
+            />
+            <InfoRow
               icon={GraduationCap}
               label="Education"
               value={formatEnumLabel(patient.education, EDUCATION_OPTIONS)}
@@ -366,6 +376,47 @@ export function PatientDetailView({
             />
           </div>
         </div>
+      </div>
+
+      {/* PhilHealth Card */}
+      <div className="clinical-card rounded-xl border border-border/50 p-5">
+        <h3 className="clinical-section-header mb-4">
+          <Shield className="h-3.5 w-3.5" />
+          PhilHealth
+        </h3>
+        {patient.philhealthNo || patient.philhealthMembershipType ? (
+          <div className="space-y-1">
+            <InfoRow icon={CreditCard} label="PIN" value={patient.philhealthNo} mono />
+            <InfoRow
+              icon={Shield}
+              label="Membership"
+              value={formatEnumLabel(patient.philhealthMembershipType, PHILHEALTH_MEMBERSHIP_TYPE_OPTIONS)}
+            />
+            {(patient.philhealthEligibilityStart || patient.philhealthEligibilityEnd) && (
+              <InfoRow
+                icon={CalendarRange}
+                label="Eligibility"
+                value={
+                  patient.philhealthEligibilityStart && patient.philhealthEligibilityEnd
+                    ? `${formatDate(patient.philhealthEligibilityStart)} - ${formatDate(patient.philhealthEligibilityEnd)}`
+                    : patient.philhealthEligibilityStart
+                      ? `From ${formatDate(patient.philhealthEligibilityStart)}`
+                      : `Until ${formatDate(patient.philhealthEligibilityEnd)}`
+                }
+              />
+            )}
+            {patient.philhealthMembershipType === "DEPENDENT" && patient.philhealthPrincipalPin && (
+              <InfoRow
+                icon={Users}
+                label="Principal PIN"
+                value={patient.philhealthPrincipalPin}
+                mono
+              />
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No PhilHealth information on file</p>
+        )}
       </div>
 
       {/* Notes */}

@@ -63,6 +63,28 @@ enum EducationLevel {
   UNKNOWN
 }
 
+enum BloodType {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+  UNKNOWN
+}
+
+enum PhilHealthMembershipType {
+  EMPLOYED
+  SELF_EMPLOYED
+  INDIGENT
+  OFW
+  LIFETIME
+  DEPENDENT
+  OTHER
+}
+
 enum EncounterStatus {
   WAIT_TRIAGE
   TRIAGED
@@ -212,7 +234,12 @@ model Barangay {
 model Patient {
   id           String  @id @default(uuid())
   patientCode  String  @unique
-  philhealthNo String? @unique @map("PhilhealthNo")
+  philhealthNo               String?                    @unique @map("PhilhealthNo")
+  philhealthMembershipType   PhilHealthMembershipType?
+  philhealthEligibilityStart DateTime?
+  philhealthEligibilityEnd   DateTime?
+  philhealthPrincipalPin     String?
+  philhealthUpdatedAt        DateTime?
 
   firstName  String
   middleName String?
@@ -223,6 +250,7 @@ model Patient {
   civilStatus CivilStatus?    @default(UNKNOWN)
   religion    Religion?       @default(UNKNOWN)
   education   EducationLevel? @default(UNKNOWN)
+  bloodType   BloodType?      @default(UNKNOWN)
   occupation  String?
 
   phone       String?

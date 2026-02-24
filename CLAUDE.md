@@ -292,3 +292,17 @@ Patients (validate or add new )
 → optional Laboratory
 → optional Pharmacy
 → done
+
+H) Additional Features
+
+# PhilHealth Registration Integration Plan
+
+## Process (brief)
+
+PhilHealth registration in CHO is **captured at patient registration or when editing a patient** in the **Patients** module (no separate “PhilHealth module”). Flow:
+
+1. **Registration staff** searches or creates a patient in the Patients module.
+2. When creating or editing a patient, they optionally fill **PhilHealth** fields (beyond the existing PhilHealth number): membership type, eligibility period, and whether the patient is a principal or dependent.
+3. The system stores this with the patient and displays it on the **patient detail view** and in encounter context for future use (e.g. benefit eligibility, claims).
+4. No external PhilHealth API is assumed for MVP; data is **facility-stored only**. Optional later: PIN format checks, and if PhilHealth provides an API, MDR verification or eligibility check.
+

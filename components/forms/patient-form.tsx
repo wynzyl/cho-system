@@ -26,6 +26,8 @@ import {
   CIVIL_STATUS_OPTIONS,
   RELIGION_OPTIONS,
   EDUCATION_OPTIONS,
+  BLOOD_TYPE_OPTIONS,
+  PHILHEALTH_MEMBERSHIP_TYPE_OPTIONS,
 } from "@/lib/constants"
 import {
   Loader2,
@@ -37,9 +39,11 @@ import {
   FileText,
   Briefcase,
   GraduationCap,
+  Droplet,
   X,
   Save,
   UserPlus,
+  Shield,
 } from "lucide-react"
 
 // Form schema - uses string for date input from HTML date picker
@@ -52,13 +56,29 @@ const patientFormSchema = z.object({
   civilStatus: z.enum(["SINGLE", "MARRIED", "WIDOWED", "SEPARATED", "ANNULLED"], { message: "Civil status is required" }),
   religion: z.enum(["ROMAN_CATHOLIC", "PROTESTANT", "IGLESIA_NI_CRISTO", "ISLAM", "BUDDHIST", "OTHER", "NONE", "UNKNOWN"]),
   education: z.enum(["NO_FORMAL", "ELEMENTARY", "JUNIOR_HIGH", "SENIOR_HIGH", "VOCATIONAL", "COLLEGE", "POSTGRADUATE", "UNKNOWN"]),
+  bloodType: z.enum(["A_POSITIVE", "A_NEGATIVE", "B_POSITIVE", "B_NEGATIVE", "AB_POSITIVE", "AB_NEGATIVE", "O_POSITIVE", "O_NEGATIVE", "UNKNOWN"]),
   occupation: z.string().max(100).optional(),
   phone: z.string().min(1, "Phone number is required").max(20),
-  philhealthNo: z.string().max(20).optional(),
+  philhealthNo: z.string().regex(/^\d{12}$/, "Must be exactly 12 digits").optional().or(z.literal("")),
+  philhealthMembershipType: z.enum(["EMPLOYED", "SELF_EMPLOYED", "INDIGENT", "OFW", "LIFETIME", "DEPENDENT", "OTHER"]).optional(),
+  philhealthEligibilityStart: z.string().optional(),
+  philhealthEligibilityEnd: z.string().optional(),
+  philhealthPrincipalPin: z.string().regex(/^\d{12}$/, "Must be exactly 12 digits").optional().or(z.literal("")),
   addressLine: z.string().max(255).optional(),
   barangayId: z.string().uuid("Barangay is required"),
   notes: z.string().max(1000).optional(),
-})
+}).refine(
+  (data) => {
+    if (data.philhealthEligibilityStart && data.philhealthEligibilityEnd) {
+      return new Date(data.philhealthEligibilityEnd) > new Date(data.philhealthEligibilityStart)
+    }
+    return true
+  },
+  {
+    message: "End date must be after start date",
+    path: ["philhealthEligibilityEnd"],
+  }
+)
 
 type PatientFormData = z.infer<typeof patientFormSchema>
 
@@ -77,9 +97,14 @@ interface PatientFormProps {
     civilStatus?: "SINGLE" | "MARRIED" | "WIDOWED" | "SEPARATED" | "ANNULLED" | "UNKNOWN" | null
     religion?: "ROMAN_CATHOLIC" | "PROTESTANT" | "IGLESIA_NI_CRISTO" | "ISLAM" | "BUDDHIST" | "OTHER" | "NONE" | "UNKNOWN" | null
     education?: "NO_FORMAL" | "ELEMENTARY" | "JUNIOR_HIGH" | "SENIOR_HIGH" | "VOCATIONAL" | "COLLEGE" | "POSTGRADUATE" | "UNKNOWN" | null
+    bloodType?: "A_POSITIVE" | "A_NEGATIVE" | "B_POSITIVE" | "B_NEGATIVE" | "AB_POSITIVE" | "AB_NEGATIVE" | "O_POSITIVE" | "O_NEGATIVE" | "UNKNOWN" | null
     occupation?: string
     phone?: string
     philhealthNo?: string
+    philhealthMembershipType?: "EMPLOYED" | "SELF_EMPLOYED" | "INDIGENT" | "OFW" | "LIFETIME" | "DEPENDENT" | "OTHER" | null
+    philhealthEligibilityStart?: Date | string | null
+    philhealthEligibilityEnd?: Date | string | null
+    philhealthPrincipalPin?: string | null
     addressLine?: string
     barangayId?: string | null
     notes?: string
@@ -87,7 +112,7 @@ interface PatientFormProps {
   onSuccess?: (patientId: string) => void
 }
 
-function formatDateForInput(date: Date | string | undefined): string {
+function formatDateForInput(date: Date | string | null | undefined): string {
   if (!date) return ""
   const d = typeof date === "string" ? new Date(date) : date
   return d.toISOString().split("T")[0]
@@ -161,9 +186,14 @@ export function PatientForm({
           : undefined,
       religion: defaultValues?.religion ?? "UNKNOWN",
       education: defaultValues?.education ?? "UNKNOWN",
+      bloodType: defaultValues?.bloodType ?? "UNKNOWN",
       occupation: defaultValues?.occupation ?? "",
       phone: defaultValues?.phone ?? "",
       philhealthNo: defaultValues?.philhealthNo ?? "",
+      philhealthMembershipType: defaultValues?.philhealthMembershipType ?? undefined,
+      philhealthEligibilityStart: formatDateForInput(defaultValues?.philhealthEligibilityStart),
+      philhealthEligibilityEnd: formatDateForInput(defaultValues?.philhealthEligibilityEnd),
+      philhealthPrincipalPin: defaultValues?.philhealthPrincipalPin ?? "",
       addressLine: defaultValues?.addressLine ?? "",
       barangayId: defaultValues?.barangayId ?? "",
       notes: defaultValues?.notes ?? "",
@@ -188,6 +218,12 @@ export function PatientForm({
         const actionData = {
           ...data,
           birthDate: new Date(data.birthDate),
+          philhealthEligibilityStart: data.philhealthEligibilityStart
+            ? new Date(data.philhealthEligibilityStart)
+            : null,
+          philhealthEligibilityEnd: data.philhealthEligibilityEnd
+            ? new Date(data.philhealthEligibilityEnd)
+            : null,
         }
 
         if (mode === "create") {
@@ -317,7 +353,7 @@ export function PatientForm({
           <section className="clinical-section pl-5">
             <SectionHeader icon={Calendar} title="Demographics" delay={250} />
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
               <FormField delay={300}>
                 <Label htmlFor="birthDate" className="text-sm font-medium">
                   Birth Date <span className="clinical-required">*</span>
@@ -364,6 +400,30 @@ export function PatientForm({
                     {form.formState.errors.sex.message}
                   </p>
                 )}
+              </FormField>
+
+              <FormField delay={375}>
+                <Label htmlFor="bloodType" className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Droplet className="h-3 w-3" />
+                  Blood Type
+                </Label>
+                <Select
+                  value={form.watch("bloodType")}
+                  onValueChange={(value) =>
+                    form.setValue("bloodType", value as PatientFormData["bloodType"])
+                  }
+                >
+                  <SelectTrigger className="bg-input/50 border-border/60 focus:border-primary/60 focus:ring-primary/20">
+                    <SelectValue placeholder="Select blood type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BLOOD_TYPE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </FormField>
             </div>
           </section>
@@ -476,51 +536,167 @@ export function PatientForm({
           <section className="clinical-section pl-5">
             <SectionHeader icon={Phone} title="Contact Information" delay={700} />
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField delay={750}>
-                <Label htmlFor="phone" className="text-sm font-medium">
-                  Phone Number <span className="clinical-required">*</span>
-                </Label>
-                <div className="clinical-input rounded-md">
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="09XX-XXX-XXXX"
-                    {...form.register("phone")}
-                    aria-invalid={!!form.formState.errors.phone}
-                    className="bg-input/50 border-border/60 focus-visible:border-primary/60 font-mono tracking-wide"
-                  />
-                </div>
-                {form.formState.errors.phone && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <span className="h-1 w-1 rounded-full bg-destructive" />
-                    {form.formState.errors.phone.message}
-                  </p>
-                )}
-              </FormField>
+            <FormField delay={750}>
+              <Label htmlFor="phone" className="text-sm font-medium">
+                Phone Number <span className="clinical-required">*</span>
+              </Label>
+              <div className="clinical-input rounded-md">
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="09XX-XXX-XXXX"
+                  {...form.register("phone")}
+                  aria-invalid={!!form.formState.errors.phone}
+                  className="bg-input/50 border-border/60 focus-visible:border-primary/60 font-mono tracking-wide"
+                />
+              </div>
+              {form.formState.errors.phone && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <span className="h-1 w-1 rounded-full bg-destructive" />
+                  {form.formState.errors.phone.message}
+                </p>
+              )}
+            </FormField>
+          </section>
 
-              <FormField delay={800}>
-                <Label htmlFor="philhealthNo" className="text-sm font-medium text-muted-foreground">
-                  PhilHealth Number
-                </Label>
-                <div className="clinical-input rounded-md">
-                  <Input
-                    id="philhealthNo"
-                    placeholder="XX-XXXXXXXXX-X"
-                    {...form.register("philhealthNo")}
-                    className="bg-input/50 border-border/60 focus-visible:border-primary/60 font-mono tracking-wide"
-                  />
-                </div>
-              </FormField>
+          {/* PhilHealth Section */}
+          <section className="clinical-section pl-5">
+            <SectionHeader icon={Shield} title="PhilHealth Information" delay={800} />
+
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField delay={850}>
+                  <Label htmlFor="philhealthNo" className="text-sm font-medium text-muted-foreground">
+                    PhilHealth Number (PIN)
+                  </Label>
+                  <div className="clinical-input rounded-md">
+                    <Input
+                      id="philhealthNo"
+                      placeholder="123456789012"
+                      maxLength={12}
+                      {...form.register("philhealthNo")}
+                      aria-invalid={!!form.formState.errors.philhealthNo}
+                      className="bg-input/50 border-border/60 focus-visible:border-primary/60 font-mono tracking-wide"
+                    />
+                  </div>
+                  {form.formState.errors.philhealthNo && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <span className="h-1 w-1 rounded-full bg-destructive" />
+                      {form.formState.errors.philhealthNo.message}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">12-digit PhilHealth Identification Number</p>
+                </FormField>
+
+                <FormField delay={900}>
+                  <Label htmlFor="philhealthMembershipType" className="text-sm font-medium text-muted-foreground">
+                    Membership Type
+                  </Label>
+                  <Select
+                    value={form.watch("philhealthMembershipType") ?? ""}
+                    onValueChange={(value) =>
+                      form.setValue("philhealthMembershipType", value as PatientFormData["philhealthMembershipType"])
+                    }
+                  >
+                    <SelectTrigger className="bg-input/50 border-border/60 focus:border-primary/60 focus:ring-primary/20">
+                      <SelectValue placeholder="Select membership type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PHILHEALTH_MEMBERSHIP_TYPE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField delay={950}>
+                  <Label htmlFor="philhealthEligibilityStart" className="text-sm font-medium text-muted-foreground">
+                    Eligibility Start Date
+                  </Label>
+                  <div className="clinical-input rounded-md">
+                    <Input
+                      id="philhealthEligibilityStart"
+                      type="date"
+                      {...form.register("philhealthEligibilityStart")}
+                      className="bg-input/50 border-border/60 focus-visible:border-primary/60"
+                    />
+                  </div>
+                </FormField>
+
+                <FormField delay={1000}>
+                  <Label htmlFor="philhealthEligibilityEnd" className="text-sm font-medium text-muted-foreground">
+                    Eligibility End Date
+                  </Label>
+                  <div className="clinical-input rounded-md">
+                    <Input
+                      id="philhealthEligibilityEnd"
+                      type="date"
+                      {...form.register("philhealthEligibilityEnd")}
+                      aria-invalid={!!form.formState.errors.philhealthEligibilityEnd}
+                      className="bg-input/50 border-border/60 focus-visible:border-primary/60"
+                    />
+                  </div>
+                  {form.formState.errors.philhealthEligibilityEnd && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <span className="h-1 w-1 rounded-full bg-destructive" />
+                      {form.formState.errors.philhealthEligibilityEnd.message}
+                    </p>
+                  )}
+                </FormField>
+              </div>
+
+              {/* Conditional Principal PIN field - only shown for dependents */}
+              {form.watch("philhealthMembershipType") === "DEPENDENT" && (
+                <FormField delay={1050}>
+                  <Label htmlFor="philhealthPrincipalPin" className="text-sm font-medium text-muted-foreground">
+                    Principal Member&apos;s PhilHealth PIN
+                  </Label>
+                  <div className="clinical-input rounded-md">
+                    <Input
+                      id="philhealthPrincipalPin"
+                      placeholder="123456789012"
+                      maxLength={12}
+                      {...form.register("philhealthPrincipalPin")}
+                      aria-invalid={!!form.formState.errors.philhealthPrincipalPin}
+                      className="bg-input/50 border-border/60 focus-visible:border-primary/60 font-mono tracking-wide"
+                    />
+                  </div>
+                  {form.formState.errors.philhealthPrincipalPin && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <span className="h-1 w-1 rounded-full bg-destructive" />
+                      {form.formState.errors.philhealthPrincipalPin.message}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">12-digit PIN of the principal PhilHealth member</p>
+                </FormField>
+              )}
             </div>
           </section>
 
           {/* Address Section */}
           <section className="clinical-section pl-5">
-            <SectionHeader icon={MapPin} title="Address" delay={850} />
+            <SectionHeader icon={MapPin} title="Address" delay={1100} />
 
-            <div className="space-y-4">
-              <FormField delay={900}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField delay={1150}>
+                <Label htmlFor="addressLine" className="text-sm font-medium text-muted-foreground">
+                  Street Address
+                </Label>
+                <div className="clinical-input rounded-md">
+                  <Input
+                    id="addressLine"
+                    placeholder="House No., Street, Purok, etc."
+                    {...form.register("addressLine")}
+                    className="bg-input/50 border-border/60 focus-visible:border-primary/60"
+                  />
+                </div>
+              </FormField>
+
+              <FormField delay={1150}>
                 <Label htmlFor="barangayId" className="text-sm font-medium">
                   Barangay <span className="clinical-required">*</span>
                 </Label>
@@ -548,28 +724,14 @@ export function PatientForm({
                   </p>
                 )}
               </FormField>
-
-              <FormField delay={950}>
-                <Label htmlFor="addressLine" className="text-sm font-medium text-muted-foreground">
-                  Street Address
-                </Label>
-                <div className="clinical-input rounded-md">
-                  <Input
-                    id="addressLine"
-                    placeholder="House No., Street, Purok, etc."
-                    {...form.register("addressLine")}
-                    className="bg-input/50 border-border/60 focus-visible:border-primary/60"
-                  />
-                </div>
-              </FormField>
             </div>
           </section>
 
           {/* Notes Section */}
           <section className="clinical-section pl-5">
-            <SectionHeader icon={FileText} title="Additional Notes" delay={1000} />
+            <SectionHeader icon={FileText} title="Additional Notes" delay={1250} />
 
-            <FormField delay={1050}>
+            <FormField delay={1300}>
               <div className="clinical-input rounded-md">
                 <Textarea
                   id="notes"
@@ -590,7 +752,7 @@ export function PatientForm({
       {/* Action buttons - outside the card */}
       <div
         className="clinical-animate-in flex items-center gap-3"
-        style={{ animationDelay: "1100ms" }}
+        style={{ animationDelay: "1350ms" }}
       >
         <Button
           type="submit"

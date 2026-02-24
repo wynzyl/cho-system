@@ -57,6 +57,13 @@ export async function updatePatientAction(
       return { found: false as const }
     }
 
+    // Determine if PhilHealth info is being updated
+    const hasPhilHealthUpdate = data.philhealthNo !== undefined ||
+      data.philhealthMembershipType !== undefined ||
+      data.philhealthEligibilityStart !== undefined ||
+      data.philhealthEligibilityEnd !== undefined ||
+      data.philhealthPrincipalPin !== undefined
+
     const patient = await tx.patient.update({
       where: { id: patientId },
       data: {
@@ -68,9 +75,17 @@ export async function updatePatientAction(
         civilStatus: data.civilStatus,
         religion: data.religion,
         education: data.education,
+        bloodType: data.bloodType,
         occupation: emptyToNull(data.occupation),
         phone: emptyToNull(data.phone),
         philhealthNo: emptyToNull(data.philhealthNo),
+        philhealthMembershipType: data.philhealthMembershipType || null,
+        philhealthEligibilityStart: data.philhealthEligibilityStart || null,
+        philhealthEligibilityEnd: data.philhealthEligibilityEnd || null,
+        philhealthPrincipalPin: data.philhealthMembershipType === "DEPENDENT"
+          ? emptyToNull(data.philhealthPrincipalPin)
+          : null,
+        philhealthUpdatedAt: hasPhilHealthUpdate ? new Date() : undefined,
         addressLine: emptyToNull(data.addressLine),
         barangayId: data.barangayId || null,
         notes: emptyToNull(data.notes),

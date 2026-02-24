@@ -41,6 +41,8 @@ export async function createPatientAction(
   const patient = await db.$transaction(async (tx) => {
     const patientCode = await generatePatientCode(tx)
 
+    const hasPhilHealthInfo = data.philhealthNo || data.philhealthMembershipType
+
     const newPatient = await tx.patient.create({
       data: {
         patientCode,
@@ -52,9 +54,17 @@ export async function createPatientAction(
         civilStatus: data.civilStatus || null,
         religion: data.religion || null,
         education: data.education || null,
+        bloodType: data.bloodType || null,
         occupation: emptyToNull(data.occupation),
         phone: emptyToNull(data.phone),
         philhealthNo: emptyToNull(data.philhealthNo),
+        philhealthMembershipType: data.philhealthMembershipType || null,
+        philhealthEligibilityStart: data.philhealthEligibilityStart || null,
+        philhealthEligibilityEnd: data.philhealthEligibilityEnd || null,
+        philhealthPrincipalPin: data.philhealthMembershipType === "DEPENDENT"
+          ? emptyToNull(data.philhealthPrincipalPin)
+          : null,
+        philhealthUpdatedAt: hasPhilHealthInfo ? new Date() : null,
         addressLine: emptyToNull(data.addressLine),
         barangayId: data.barangayId || null,
         notes: emptyToNull(data.notes),
