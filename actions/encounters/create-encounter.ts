@@ -44,6 +44,48 @@ export async function createEncounterAction(
   const endOfDay = new Date()
   endOfDay.setHours(23, 59, 59, 999)
 
+  // Check for previous WAIT_TRIAGE encounter to recycle (from past days)
+  const previousWaitTriageEncounter = await db.encounter.findFirst({
+    where: {
+      patientId,
+      facilityId: session.facilityId,
+      status: "WAIT_TRIAGE",
+      occurredAt: { lt: startOfDay },
+      deletedAt: null,
+    },
+    orderBy: { occurredAt: "desc" },
+  })
+
+  if (previousWaitTriageEncounter) {
+    // Recycle the previous encounter by updating its occurredAt to now
+    const recycledEncounter = await db.$transaction(async (tx) => {
+      const updated = await tx.encounter.update({
+        where: { id: previousWaitTriageEncounter.id },
+        data: { occurredAt: new Date() },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          userId: session.userId,
+          userName: session.name,
+          action: "UPDATE",
+          entity: "Encounter",
+          entityId: updated.id,
+          metadata: {
+            patientId,
+            patientCode: patient.patientCode,
+            previousOccurredAt: previousWaitTriageEncounter.occurredAt.toISOString(),
+            recycled: true,
+          },
+        },
+      })
+
+      return updated
+    })
+
+    return { ok: true, data: recycledEncounter }
+  }
+
   const existingEncounter = await db.encounter.findFirst({
     where: {
       patientId,
