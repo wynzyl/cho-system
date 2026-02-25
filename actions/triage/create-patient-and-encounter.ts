@@ -3,6 +3,7 @@
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { generatePatientCode } from "@/lib/utils/patient-code"
+import { validateInput, emptyToNull } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import { z } from "zod"
 
@@ -27,89 +28,86 @@ export async function createPatientAndEncounterAction(
 ): Promise<ActionResult<CreatePatientAndEncounterResponse>> {
   const session = await requireRoleForAction(["TRIAGE"])
 
-  const parsed = inputSchema.safeParse(input)
-  if (!parsed.success) {
-    const fieldErrors: Record<string, string[]> = {}
-    for (const issue of parsed.error.issues) {
-      const field = issue.path[0] as string
-      if (!fieldErrors[field]) {
-        fieldErrors[field] = []
-      }
-      fieldErrors[field].push(issue.message)
-    }
-    return {
-      ok: false,
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid input",
-        fieldErrors,
-      },
-    }
-  }
+  const validation = validateInput(inputSchema, input)
+  if (!validation.ok) return validation.result
+  const data = validation.data
 
-  const data = parsed.data
+  try {
+    const result = await db.$transaction(async (tx) => {
+      const patientCode = await generatePatientCode(tx)
 
-  // Convert empty strings to null for optional fields
-  const emptyToNull = (val: string | undefined | null) =>
-    val?.trim() ? val.trim() : null
-
-  const result = await db.$transaction(async (tx) => {
-    const patientCode = await generatePatientCode(tx)
-
-    const patient = await tx.patient.create({
-      data: {
-        patientCode,
-        firstName: data.firstName.trim(),
-        lastName: data.lastName.trim(),
-        birthDate: data.birthDate,
-        sex: data.sex,
-        phone: emptyToNull(data.phone),
-      },
-    })
-
-    const encounter = await tx.encounter.create({
-      data: {
-        patientId: patient.id,
-        facilityId: session.facilityId,
-        status: "WAIT_TRIAGE",
-      },
-    })
-
-    // Create audit logs for both
-    await tx.auditLog.createMany({
-      data: [
-        {
-          userId: session.userId,
-          userName: session.name,
-          action: "CREATE",
-          entity: "Patient",
-          entityId: patient.id,
-          metadata: { patientCode, source: "triage-quick-add" },
+      const patient = await tx.patient.create({
+        data: {
+          patientCode,
+          firstName: data.firstName.trim(),
+          lastName: data.lastName.trim(),
+          birthDate: data.birthDate,
+          sex: data.sex,
+          phone: emptyToNull(data.phone),
         },
-        {
-          userId: session.userId,
-          userName: session.name,
-          action: "CREATE",
-          entity: "Encounter",
-          entityId: encounter.id,
-          metadata: {
-            patientId: patient.id,
-            patientCode,
-            status: "WAIT_TRIAGE",
+      })
+
+      const encounter = await tx.encounter.create({
+        data: {
+          patientId: patient.id,
+          facilityId: session.facilityId,
+          status: "WAIT_TRIAGE",
+        },
+      })
+
+      // Create audit logs for both
+      await tx.auditLog.createMany({
+        data: [
+          {
+            userId: session.userId,
+            userName: session.name,
+            action: "CREATE",
+            entity: "Patient",
+            entityId: patient.id,
+            metadata: { patientCode, source: "triage-quick-add" },
           },
-        },
-      ],
+          {
+            userId: session.userId,
+            userName: session.name,
+            action: "CREATE",
+            entity: "Encounter",
+            entityId: encounter.id,
+            metadata: {
+              patientId: patient.id,
+              patientCode,
+              status: "WAIT_TRIAGE",
+            },
+          },
+        ],
+      })
+
+      return { patient, encounter }
     })
 
-    return { patient, encounter }
-  })
-
-  return {
-    ok: true,
-    data: {
-      patientId: result.patient.id,
-      encounterId: result.encounter.id,
-      patientCode: result.patient.patientCode,
-    },
+    return {
+      ok: true,
+      data: {
+        patientId: result.patient.id,
+        encounterId: result.encounter.id,
+        patientCode: result.patient.patientCode,
+      },
+    }
+  } catch (error) {
+    // Handle unique constraint violation (patientCode collision)
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2002"
+    ) {
+      return {
+        ok: false,
+        error: {
+          code: "DUPLICATE_PATIENT_CODE",
+          message: "Patient code collision occurred. Please try again.",
+        },
+      }
+    }
+    throw error
   }
 }

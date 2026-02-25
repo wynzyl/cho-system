@@ -3,34 +3,16 @@
 import { db } from "@/lib/db"
 import { verifyPassword, createSession } from "@/lib/auth"
 import { loginSchema, type LoginInput } from "@/lib/validators/auth"
+import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import { ROLE_ROUTES } from "@/lib/auth/routes"
 
 export async function loginAction(
   data: LoginInput
 ): Promise<ActionResult<{ redirectTo: string }>> {
-  // Validate input
-  const parsed = loginSchema.safeParse(data)
-  if (!parsed.success) {
-    const fieldErrors: Record<string, string[]> = {}
-    for (const issue of parsed.error.issues) {
-      const field = issue.path[0] as string
-      if (!fieldErrors[field]) {
-        fieldErrors[field] = []
-      }
-      fieldErrors[field].push(issue.message)
-    }
-    return {
-      ok: false,
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid input",
-        fieldErrors,
-      },
-    }
-  }
-
-  const { email, password } = parsed.data
+  const validation = validateInput(loginSchema, data)
+  if (!validation.ok) return validation.result
+  const { email, password } = validation.data
 
   // Dummy hash for timing-safe comparison when user not found
   // Generated with bcrypt.hash("dummy", 10)

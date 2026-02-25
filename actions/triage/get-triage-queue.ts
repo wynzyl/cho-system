@@ -3,6 +3,7 @@
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { getTriageQueueSchema, type GetTriageQueueInput } from "@/lib/validators/triage"
+import { validateInput, calculateAge } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import type { Sex } from "@prisma/client"
 
@@ -16,16 +17,9 @@ export type TriageQueueItem = {
   chiefComplaint: string | null
   occurredAt: string // ISO string (serialized by Next.js server/client boundary)
   priority: "HIGH" | "MEDIUM" | "LOW"
-}
-
-function calculateAge(birthDate: Date): number {
-  const today = new Date()
-  let age = today.getFullYear() - birthDate.getFullYear()
-  const monthDiff = today.getMonth() - birthDate.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--
-  }
-  return age
+  claimedById: string | null
+  claimedAt: string | null // ISO string
+  claimedByName: string | null
 }
 
 // Pre-compiled regex patterns for priority detection (word-boundary matching)
@@ -69,19 +63,11 @@ function determinePriority(chiefComplaint: string | null): "HIGH" | "MEDIUM" | "
 
 export async function getTriageQueueAction(
   input?: GetTriageQueueInput
-): Promise<ActionResult<{ encounters: TriageQueueItem[]; total: number }>> {
+): Promise<ActionResult<{ encounters: TriageQueueItem[]; total: number; currentUserId: string }>> {
   const session = await requireRoleForAction(["TRIAGE"])
 
-  const parsed = getTriageQueueSchema.safeParse(input ?? {})
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid input",
-      },
-    }
-  }
+  const validation = validateInput(getTriageQueueSchema, input ?? {})
+  if (!validation.ok) return validation.result
 
   // Get start and end of today
   const startOfDay = new Date()
@@ -113,6 +99,9 @@ export async function getTriageQueueAction(
           sex: true,
         },
       },
+      claimedBy: {
+        select: { name: true },
+      },
     },
     orderBy: {
       occurredAt: "asc", // FIFO queue
@@ -129,6 +118,9 @@ export async function getTriageQueueAction(
     chiefComplaint: encounter.chiefComplaint,
     occurredAt: encounter.occurredAt.toISOString(),
     priority: determinePriority(encounter.chiefComplaint),
+    claimedById: encounter.claimedById,
+    claimedAt: encounter.claimedAt?.toISOString() ?? null,
+    claimedByName: encounter.claimedBy?.name ?? null,
   }))
 
   return {
@@ -136,6 +128,7 @@ export async function getTriageQueueAction(
     data: {
       encounters: queueItems,
       total: queueItems.length,
+      currentUserId: session.userId,
     },
   }
 }

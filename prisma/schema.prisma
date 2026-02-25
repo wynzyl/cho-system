@@ -174,9 +174,10 @@ model User {
   deletedBy    User?     @relation("UserDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
   deletedUsers User[]    @relation("UserDeletedBy")
 
-  auditLogs        AuditLog[]
-  encountersTriage Encounter[] @relation("EncounterTriageBy")
-  encountersDoctor Encounter[] @relation("EncounterDoctor")
+  auditLogs         AuditLog[]
+  encountersTriage  Encounter[] @relation("EncounterTriageBy")
+  encountersDoctor  Encounter[] @relation("EncounterDoctor")
+  encountersClaimed Encounter[] @relation("ClaimedEncounters")
 
   prescriptionsCreated Prescription[] @relation("PrescriptionCreatedBy")
   labOrdersRequested   LabOrder[]     @relation("LabOrderRequestedBy")
@@ -188,20 +189,20 @@ model User {
   dispenseTxns  DispenseTxn[]
 
   // Inverse relations for "deletedBy" across models
-  facilityDeletedBy       Facility[]         @relation("FacilityDeletedBy")
-  patientDeletedBy        Patient[]          @relation("PatientDeletedBy")
-  encounterDeletedBy      Encounter[]        @relation("EncounterDeletedBy")
-  triageRecordDeletedBy   TriageRecord[]     @relation("TriageRecordDeletedBy")
-  diagnosisDeletedBy      Diagnosis[]        @relation("DiagnosisDeletedBy")
-  prescriptionDeletedBy   Prescription[]     @relation("PrescriptionDeletedBy")
-  rxItemDeletedBy         PrescriptionItem[] @relation("RxItemDeletedBy")
-  labOrderDeletedBy       LabOrder[]         @relation("LabOrderDeletedBy")
-  labResultDeletedBy      LabResult[]        @relation("LabResultDeletedBy")
-  medicineDeletedBy       Medicine[]         @relation("MedicineDeletedBy")
-  inventoryLevelDeletedBy InventoryLevel[]   @relation("InventoryLevelDeletedBy")
-  stockLotDeletedBy       StockLot[]         @relation("StockLotDeletedBy")
-  inventoryTxnDeletedBy   InventoryTxn[]     @relation("InventoryTxnDeletedBy")
-  dispenseTxnDeletedBy    DispenseTxn[]      @relation("DispenseTxnDeletedBy")
+  facilityDeletedBy             Facility[]             @relation("FacilityDeletedBy")
+  patientDeletedBy              Patient[]              @relation("PatientDeletedBy")
+  encounterDeletedBy            Encounter[]            @relation("EncounterDeletedBy")
+  triageRecordDeletedBy         TriageRecord[]         @relation("TriageRecordDeletedBy")
+  diagnosisDeletedBy            Diagnosis[]            @relation("DiagnosisDeletedBy")
+  prescriptionDeletedBy         Prescription[]         @relation("PrescriptionDeletedBy")
+  rxItemDeletedBy               PrescriptionItem[]     @relation("RxItemDeletedBy")
+  labOrderDeletedBy             LabOrder[]             @relation("LabOrderDeletedBy")
+  labResultDeletedBy            LabResult[]            @relation("LabResultDeletedBy")
+  medicineDeletedBy             Medicine[]             @relation("MedicineDeletedBy")
+  inventoryLevelDeletedBy       InventoryLevel[]       @relation("InventoryLevelDeletedBy")
+  stockLotDeletedBy             StockLot[]             @relation("StockLotDeletedBy")
+  inventoryTxnDeletedBy         InventoryTxn[]         @relation("InventoryTxnDeletedBy")
+  dispenseTxnDeletedBy          DispenseTxn[]          @relation("DispenseTxnDeletedBy")
   diagnosisCategoryDeletedBy    DiagnosisCategory[]    @relation("DiagnosisCategoryDeletedBy")
   diagnosisSubcategoryDeletedBy DiagnosisSubcategory[] @relation("DiagnosisSubcategoryDeletedBy")
   diagnosisIcdMapDeletedBy      DiagnosisIcdMap[]      @relation("DiagnosisIcdMapDeletedBy")
@@ -233,8 +234,8 @@ model Barangay {
 
 model Patient {
   id           String  @id @default(uuid())
-  patientCode  String  @unique
-  philhealthNo               String?                    @unique @map("PhilhealthNo")
+  patientCode  String  // Partial unique index via migration (WHERE deletedAt IS NULL)
+  philhealthNo String? @map("PhilhealthNo") // Partial unique index via migration
   philhealthMembershipType   PhilHealthMembershipType?
   philhealthEligibilityStart DateTime?
   philhealthEligibilityEnd   DateTime?
@@ -255,7 +256,7 @@ model Patient {
 
   phone       String?
   addressLine String?
-  barangayId  String? 
+  barangayId  String?
   barangay    Barangay? @relation(fields: [barangayId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   city        String?   @default("Urdaneta City")
   province    String?   @default("Pangasinan")
@@ -277,6 +278,12 @@ model Patient {
   @@index([phone])
   @@index([lastName, firstName])
   @@index([barangayId])
+  @@index([patientCode])
+  @@index([philhealthNo])
+
+  // Partial unique indexes (created via migration):
+  // CREATE UNIQUE INDEX "Patient_patientCode_active_unique" ON "Patient" ("patientCode") WHERE "deletedAt" IS NULL;
+  // CREATE UNIQUE INDEX "Patient_philhealthNo_active_unique" ON "Patient" ("PhilhealthNo") WHERE "deletedAt" IS NULL AND "PhilhealthNo" IS NOT NULL;
 }
 
 model Encounter {
@@ -300,6 +307,11 @@ model Encounter {
   chiefComplaint String?
   triageNotes    String?
 
+  // Multi-user FIFO claiming for triage queue
+  claimedById String?
+  claimedAt   DateTime?
+  claimedBy   User?     @relation("ClaimedEncounters", fields: [claimedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
   triageRecord  TriageRecord?
   diagnoses     Diagnosis[]
   prescriptions Prescription[]
@@ -318,6 +330,12 @@ model Encounter {
   @@index([facilityId])
   @@index([facilityId, occurredAt])
   @@index([patientId, occurredAt])
+
+  // Partial unique index: only one WAIT_TRIAGE encounter per patient
+  // Created via raw SQL in migration (Prisma doesn't support partial unique natively)
+  // CREATE UNIQUE INDEX "Encounter_patientId_wait_triage_unique"
+  //   ON "Encounter" ("patientId")
+  //   WHERE "status" = 'WAIT_TRIAGE' AND "deletedAt" IS NULL;
 }
 
 model TriageRecord {
@@ -712,7 +730,7 @@ model AuditLog {
 model DiagnosisCategory {
   id          String   @id @default(uuid())
   code        String   @unique // e.g., "TROPICAL", "CHRONIC"
-  name        String            // e.g., "Vector-Borne & Tropical Diseases"
+  name        String // e.g., "Vector-Borne & Tropical Diseases"
   description String?
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
@@ -735,7 +753,7 @@ model DiagnosisSubcategory {
   categoryId   String
   category     DiagnosisCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   code         String            @unique // e.g., "DENGUE", "HYPERTENSION"
-  name         String                     // e.g., "Dengue Fever"
+  name         String // e.g., "Dengue Fever"
   description  String?
   isNotifiable Boolean           @default(false)
   isAnimalBite Boolean           @default(false)
@@ -762,8 +780,8 @@ model DiagnosisIcdMap {
   id            String               @id @default(uuid())
   subcategoryId String
   subcategory   DiagnosisSubcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  icd10Code     String               // e.g., "A90", "I10"
-  icdTitle      String               // e.g., "Dengue Fever", "Essential Hypertension"
+  icd10Code     String // e.g., "A90", "I10"
+  icdTitle      String // e.g., "Dengue Fever", "Essential Hypertension"
   isDefault     Boolean              @default(false) // Default ICD code for this subcategory
   isActive      Boolean              @default(true)
   createdAt     DateTime             @default(now())
