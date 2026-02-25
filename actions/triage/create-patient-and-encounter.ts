@@ -114,11 +114,7 @@ export async function createPatientAndEncounterAction(
       },
     }
   } catch (error) {
-<<<<<<< HEAD
     // Handle unique constraint violation (patientCode collision)
-=======
-    // Handle unique constraint violation (should not happen for new patient, but safety)
->>>>>>> 362c278956e3343df46a0bf4bd191b26e326e91b
     if (
       error &&
       typeof error === "object" &&
@@ -128,13 +124,8 @@ export async function createPatientAndEncounterAction(
       return {
         ok: false,
         error: {
-<<<<<<< HEAD
           code: "DUPLICATE_PATIENT_CODE",
           message: "Patient code collision occurred. Please try again.",
-=======
-          code: "DUPLICATE_ENCOUNTER",
-          message: "An encounter already exists for this patient.",
->>>>>>> 362c278956e3343df46a0bf4bd191b26e326e91b
         },
       }
     }

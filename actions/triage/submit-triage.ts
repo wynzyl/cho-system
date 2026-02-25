@@ -60,11 +60,7 @@ export async function submitTriageAction(
   }
 
   const result = await db.$transaction(async (tx) => {
-<<<<<<< HEAD
-    // Create or update TriageRecord with vitals (upsert handles resubmission)
-=======
     // Create or update TriageRecord with vitals (upsert handles reused encounters)
->>>>>>> 362c278956e3343df46a0bf4bd191b26e326e91b
     const triageRecord = await tx.triageRecord.upsert({
       where: { encounterId: data.encounterId },
       create: {

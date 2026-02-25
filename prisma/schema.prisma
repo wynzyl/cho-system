@@ -233,15 +233,9 @@ model Barangay {
 }
 
 model Patient {
-<<<<<<< HEAD
   id           String  @id @default(uuid())
   patientCode  String  // Partial unique index via migration (WHERE deletedAt IS NULL)
-  philhealthNo               String?                    @map("PhilhealthNo") // Partial unique index via migration
-=======
-  id                         String                    @id @default(uuid())
-  patientCode                String                    @unique
-  philhealthNo               String?                   @unique @map("PhilhealthNo")
->>>>>>> 362c278956e3343df46a0bf4bd191b26e326e91b
+  philhealthNo String? @map("PhilhealthNo") // Partial unique index via migration
   philhealthMembershipType   PhilHealthMembershipType?
   philhealthEligibilityStart DateTime?
   philhealthEligibilityEnd   DateTime?

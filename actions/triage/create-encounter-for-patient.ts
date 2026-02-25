@@ -49,53 +49,6 @@ export async function createEncounterForPatientAction(
     }
   }
 
-<<<<<<< HEAD
-  // Check for existing encounter today (not cancelled, not deleted)
-  const startOfDay = new Date()
-  startOfDay.setHours(0, 0, 0, 0)
-  const endOfDay = new Date()
-  endOfDay.setHours(23, 59, 59, 999)
-
-  const existingEncounter = await db.encounter.findFirst({
-    where: {
-      patientId,
-      facilityId: session.facilityId,
-      deletedAt: null,
-      status: { not: "CANCELLED" },
-      occurredAt: { gte: startOfDay, lte: endOfDay },
-    },
-    select: { id: true, status: true },
-  })
-
-  if (existingEncounter) {
-    return {
-      ok: false,
-      error: {
-        code: "DUPLICATE_ENCOUNTER",
-        message: "Patient already has an active encounter today",
-      },
-    }
-  }
-
-  // Create encounter
-  const encounter = await db.$transaction(async (tx) => {
-    const newEncounter = await tx.encounter.create({
-      data: {
-        patientId,
-        facilityId: session.facilityId,
-        status: "WAIT_TRIAGE",
-      },
-    })
-
-    await tx.auditLog.create({
-      data: {
-        userId: session.userId,
-        userName: session.name,
-        action: "CREATE",
-        entity: "Encounter",
-        entityId: newEncounter.id,
-        metadata: {
-=======
   // RULES BEFORE ENCOUNTER (see Project_roadmap.md):
   // 1. Do not allow a new WAIT_TRIAGE encounter if one already exists.
   // 2. If a previous WAIT_TRIAGE encounter exists, reuse it and reschedule to now.
@@ -104,8 +57,8 @@ export async function createEncounterForPatientAction(
     const result = await db.$transaction(async (tx) => {
       const existingWaitTriage = await tx.encounter.findFirst({
         where: {
->>>>>>> 362c278956e3343df46a0bf4bd191b26e326e91b
           patientId,
+          facilityId: session.facilityId,
           status: "WAIT_TRIAGE",
           deletedAt: null,
         },
@@ -149,6 +102,7 @@ export async function createEncounterForPatientAction(
       const existingForLab = await tx.encounter.findFirst({
         where: {
           patientId,
+          facilityId: session.facilityId,
           status: "FOR_LAB",
           deletedAt: null,
         },
@@ -189,6 +143,7 @@ export async function createEncounterForPatientAction(
       const existingActive = await tx.encounter.findFirst({
         where: {
           patientId,
+          facilityId: session.facilityId,
           deletedAt: null,
           status: { notIn: ["CANCELLED", "DONE", "WAIT_TRIAGE", "FOR_LAB"] },
         },
@@ -253,6 +208,7 @@ export async function createEncounterForPatientAction(
       const existingWaitTriage = await db.encounter.findFirst({
         where: {
           patientId,
+          facilityId: session.facilityId,
           status: "WAIT_TRIAGE",
           deletedAt: null,
         },
