@@ -8,3 +8,5 @@ export {
   createPatientAndEncounterAction,
   type CreatePatientAndEncounterResponse,
 } from "./create-patient-and-encounter"
+export { claimEncounterAction } from "./claim-encounter"
+export { releaseEncounterAction } from "./release-encounter"

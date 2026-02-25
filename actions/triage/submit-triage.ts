@@ -60,9 +60,10 @@ export async function submitTriageAction(
   }
 
   const result = await db.$transaction(async (tx) => {
-    // Create TriageRecord with vitals
-    const triageRecord = await tx.triageRecord.create({
-      data: {
+    // Create or update TriageRecord with vitals (upsert handles reused encounters)
+    const triageRecord = await tx.triageRecord.upsert({
+      where: { encounterId: data.encounterId },
+      create: {
         encounterId: data.encounterId,
         bpSystolic: data.bpSystolic ?? null,
         bpDiastolic: data.bpDiastolic ?? null,
@@ -74,6 +75,19 @@ export async function submitTriageAction(
         heightCm: data.heightCm ?? null,
         notes: data.triageNotes ?? null,
         recordedById: session.userId,
+      },
+      update: {
+        bpSystolic: data.bpSystolic ?? null,
+        bpDiastolic: data.bpDiastolic ?? null,
+        heartRate: data.heartRate ?? null,
+        respiratoryRate: data.respiratoryRate ?? null,
+        temperatureC: data.temperatureC ?? null,
+        spo2: data.spo2 ?? null,
+        weightKg: data.weightKg ?? null,
+        heightCm: data.heightCm ?? null,
+        notes: data.triageNotes ?? null,
+        recordedById: session.userId,
+        recordedAt: new Date(),
       },
     })
 

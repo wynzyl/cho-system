@@ -28,6 +28,7 @@ export default function PatientsPage() {
   const [searchInput, setSearchInput] = useState(query)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [encounterError, setEncounterError] = useState<string | null>(null)
+  const [encounterNotice, setEncounterNotice] = useState<string | null>(null)
 
   const canEdit = session?.role === "REGISTRATION" || session?.role === "ADMIN"
   const canStartEncounter = session?.role === "REGISTRATION" || session?.role === "ADMIN"
@@ -104,6 +105,12 @@ export default function PatientsPage() {
       {encounterError && (
         <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {encounterError}
+        </div>
+      )}
+
+      {encounterNotice && (
+        <div className="rounded-md bg-primary/10 p-3 text-sm text-primary">
+          {encounterNotice}
         </div>
       )}
 

@@ -3,21 +3,74 @@
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { TriageQueueCard } from "./triage-queue-card"
+import { TriageQueueCard, type QueueItemState } from "./triage-queue-card"
 import type { TriageQueueItem } from "@/actions/triage"
+
+// Claims expire after 15 minutes (must match server)
+const CLAIM_EXPIRY_MS = 15 * 60 * 1000
 
 interface TriageQueueProps {
   encounters: TriageQueueItem[]
   selectedId: string | null
+  currentUserId: string | null
   onSelect: (id: string) => void
   searchQuery: string
   onSearchChange: (query: string) => void
   isLoading: boolean
 }
 
+function isClaimExpired(claimedAt: string | null): boolean {
+  if (!claimedAt) return true
+  const claimTime = new Date(claimedAt).getTime()
+  const now = Date.now()
+  return now - claimTime > CLAIM_EXPIRY_MS
+}
+
+function getItemState(
+  item: TriageQueueItem,
+  index: number,
+  items: TriageQueueItem[],
+  currentUserId: string | null
+): QueueItemState {
+  // Check if current user has already claimed any patient
+  const currentUserHasClaim = items.some(
+    (i) => i.claimedById === currentUserId && !isClaimExpired(i.claimedAt)
+  )
+
+  // If claimed by current user, it's selected
+  if (item.claimedById === currentUserId && !isClaimExpired(item.claimedAt)) {
+    return "selected"
+  }
+
+  // If current user has a claim, all other patients are disabled
+  // User must complete their current triage before selecting another
+  if (currentUserHasClaim) {
+    return "disabled"
+  }
+
+  // If claimed by another user and claim is not expired
+  if (item.claimedById && !isClaimExpired(item.claimedAt)) {
+    return "claimed-by-other"
+  }
+
+  // Find the first unclaimed (or expired claim) item
+  const firstAvailableIndex = items.findIndex(
+    (i) => !i.claimedById || isClaimExpired(i.claimedAt)
+  )
+
+  // If this is the first available, it's available
+  if (index === firstAvailableIndex) {
+    return "available"
+  }
+
+  // Otherwise, user cannot skip - disabled
+  return "disabled"
+}
+
 export function TriageQueue({
   encounters,
   selectedId,
+  currentUserId,
   onSelect,
   searchQuery,
   onSearchChange,
@@ -64,14 +117,18 @@ export function TriageQueue({
             </p>
           </div>
         ) : (
-          filteredEncounters.map((item) => (
-            <TriageQueueCard
-              key={item.id}
-              item={item}
-              isSelected={selectedId === item.id}
-              onClick={() => onSelect(item.id)}
-            />
-          ))
+          filteredEncounters.map((item, index) => {
+            const state = getItemState(item, index, filteredEncounters, currentUserId)
+            return (
+              <TriageQueueCard
+                key={item.id}
+                item={item}
+                state={state}
+                isSelected={selectedId === item.id}
+                onClick={() => onSelect(item.id)}
+              />
+            )
+          })
         )}
       </div>
     </div>
