@@ -1,12 +1,15 @@
 "use client"
 
-import { User } from "lucide-react"
+import { User, Lock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { TriageQueueItem } from "@/actions/triage"
 
+export type QueueItemState = "selected" | "claimed-by-other" | "available" | "disabled"
+
 interface TriageQueueCardProps {
   item: TriageQueueItem
+  state: QueueItemState
   isSelected: boolean
   onClick: () => void
 }
@@ -32,7 +35,7 @@ function formatSex(sex: string): string {
   }
 }
 
-export function TriageQueueCard({ item, isSelected, onClick }: TriageQueueCardProps) {
+export function TriageQueueCard({ item, state, isSelected, onClick }: TriageQueueCardProps) {
   const priorityVariant = {
     HIGH: "destructive" as const,
     MEDIUM: "secondary" as const,
@@ -45,19 +48,33 @@ export function TriageQueueCard({ item, isSelected, onClick }: TriageQueueCardPr
     LOW: "Low Priority",
   }
 
+  const isDisabled = state === "claimed-by-other" || state === "disabled"
+  const isClaimedByOther = state === "claimed-by-other"
+
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={isDisabled ? undefined : onClick}
+      disabled={isDisabled}
       className={cn(
-        "w-full rounded-lg border bg-card p-4 text-left transition-all hover:bg-accent/50",
-        isSelected && "ring-2 ring-primary border-primary"
+        "w-full rounded-lg border bg-card p-4 text-left transition-all",
+        !isDisabled && "hover:bg-accent/50 cursor-pointer",
+        isSelected && "ring-2 ring-primary border-primary",
+        isClaimedByOther && "opacity-60 bg-muted/50 cursor-not-allowed",
+        state === "disabled" && "opacity-40 cursor-not-allowed"
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
-            <User className="h-5 w-5 text-muted-foreground" />
+          <div className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+            isClaimedByOther ? "bg-amber-100 dark:bg-amber-900/30" : "bg-muted"
+          )}>
+            {isClaimedByOther ? (
+              <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            ) : (
+              <User className="h-5 w-5 text-muted-foreground" />
+            )}
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-foreground truncate">{item.patientName}</p>
@@ -70,6 +87,13 @@ export function TriageQueueCard({ item, isSelected, onClick }: TriageQueueCardPr
           {priorityLabel[item.priority]}
         </Badge>
       </div>
+
+      {isClaimedByOther && item.claimedByName && (
+        <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+          <Lock className="h-3 w-3" />
+          <span>In progress by {item.claimedByName}</span>
+        </div>
+      )}
 
       <div className="mt-3 flex items-center justify-between text-sm">
         <div>

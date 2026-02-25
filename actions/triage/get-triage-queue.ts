@@ -16,6 +16,10 @@ export type TriageQueueItem = {
   chiefComplaint: string | null
   occurredAt: string // ISO string (serialized by Next.js server/client boundary)
   priority: "HIGH" | "MEDIUM" | "LOW"
+  // Multi-user claiming info
+  claimedById: string | null
+  claimedAt: string | null // ISO string
+  claimedByName: string | null
 }
 
 function calculateAge(birthDate: Date): number {
@@ -69,7 +73,7 @@ function determinePriority(chiefComplaint: string | null): "HIGH" | "MEDIUM" | "
 
 export async function getTriageQueueAction(
   input?: GetTriageQueueInput
-): Promise<ActionResult<{ encounters: TriageQueueItem[]; total: number }>> {
+): Promise<ActionResult<{ encounters: TriageQueueItem[]; total: number; currentUserId: string }>> {
   const session = await requireRoleForAction(["TRIAGE"])
 
   const parsed = getTriageQueueSchema.safeParse(input ?? {})
@@ -113,6 +117,11 @@ export async function getTriageQueueAction(
           sex: true,
         },
       },
+      claimedBy: {
+        select: {
+          name: true,
+        },
+      },
     },
     orderBy: {
       occurredAt: "asc", // FIFO queue
@@ -129,6 +138,9 @@ export async function getTriageQueueAction(
     chiefComplaint: encounter.chiefComplaint,
     occurredAt: encounter.occurredAt.toISOString(),
     priority: determinePriority(encounter.chiefComplaint),
+    claimedById: encounter.claimedById,
+    claimedAt: encounter.claimedAt?.toISOString() ?? null,
+    claimedByName: encounter.claimedBy?.name ?? null,
   }))
 
   return {
@@ -136,6 +148,7 @@ export async function getTriageQueueAction(
     data: {
       encounters: queueItems,
       total: queueItems.length,
+      currentUserId: session.userId,
     },
   }
 }
