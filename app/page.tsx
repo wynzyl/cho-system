@@ -19,6 +19,9 @@ export default async function HomePage() {
       <Button asChild>
         <Link href="/login">Sign In</Link>
       </Button>
+      <div className="flex flex-col items-center my-6">
+       <section className="text-muted-foreground text-sm"> ©copyright 2026 Urdaneta City Health Office</section>
+      </div>
     </div>
   )
 }
