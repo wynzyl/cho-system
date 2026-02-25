@@ -3,6 +3,7 @@
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { createEncounterSchema, type CreateEncounterInput } from "@/lib/validators/encounter"
+import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import { Encounter } from "@prisma/client"
 
@@ -11,18 +12,9 @@ export async function createEncounterAction(
 ): Promise<ActionResult<Encounter>> {
   const session = await requireRoleForAction(["REGISTRATION"])
 
-  const parsed = createEncounterSchema.safeParse(input)
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid input",
-      },
-    }
-  }
-
-  const { patientId } = parsed.data
+  const validation = validateInput(createEncounterSchema, input)
+  if (!validation.ok) return validation.result
+  const { patientId } = validation.data
 
   const patient = await db.patient.findFirst({
     where: { id: patientId, deletedAt: null },

@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { createPatientSchema, type CreatePatientInput } from "@/lib/validators/patient"
 import { generatePatientCode } from "@/lib/utils/patient-code"
+import { validateInput, emptyToNull } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import { Patient } from "@prisma/client"
 
@@ -12,31 +13,9 @@ export async function createPatientAction(
 ): Promise<ActionResult<Patient>> {
   const session = await requireRoleForAction(["REGISTRATION"])
 
-  const parsed = createPatientSchema.safeParse(input)
-  if (!parsed.success) {
-    const fieldErrors: Record<string, string[]> = {}
-    for (const issue of parsed.error.issues) {
-      const field = issue.path[0] as string
-      if (!fieldErrors[field]) {
-        fieldErrors[field] = []
-      }
-      fieldErrors[field].push(issue.message)
-    }
-    return {
-      ok: false,
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid input",
-        fieldErrors,
-      },
-    }
-  }
-
-  const data = parsed.data
-
-  // Convert empty strings to null for optional unique fields
-  const emptyToNull = (val: string | undefined | null) =>
-    val?.trim() ? val.trim() : null
+  const validation = validateInput(createPatientSchema, input)
+  if (!validation.ok) return validation.result
+  const data = validation.data
 
   const patient = await db.$transaction(async (tx) => {
     const patientCode = await generatePatientCode(tx)

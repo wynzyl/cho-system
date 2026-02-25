@@ -3,6 +3,7 @@
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { submitTriageSchema, type SubmitTriageInput } from "@/lib/validators/triage"
+import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 
 export async function submitTriageAction(
@@ -10,27 +11,9 @@ export async function submitTriageAction(
 ): Promise<ActionResult<{ encounterId: string; triageRecordId: string }>> {
   const session = await requireRoleForAction(["TRIAGE"])
 
-  const parsed = submitTriageSchema.safeParse(input)
-  if (!parsed.success) {
-    const fieldErrors: Record<string, string[]> = {}
-    for (const issue of parsed.error.issues) {
-      const field = String(issue.path[0])
-      if (!fieldErrors[field]) {
-        fieldErrors[field] = []
-      }
-      fieldErrors[field].push(issue.message)
-    }
-    return {
-      ok: false,
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid input",
-        fieldErrors,
-      },
-    }
-  }
-
-  const data = parsed.data
+  const validation = validateInput(submitTriageSchema, input)
+  if (!validation.ok) return validation.result
+  const data = validation.data
 
   // Verify encounter exists with WAIT_TRIAGE status and belongs to user's facility
   const encounter = await db.encounter.findFirst({
