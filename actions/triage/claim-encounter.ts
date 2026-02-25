@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
+import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import { z } from "zod"
 
@@ -19,18 +20,9 @@ export async function claimEncounterAction(
 ): Promise<ActionResult<{ claimed: true }>> {
   const session = await requireRoleForAction(["TRIAGE"])
 
-  const parsed = inputSchema.safeParse(input)
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid encounter ID",
-      },
-    }
-  }
-
-  const { encounterId } = parsed.data
+  const validation = validateInput(inputSchema, input)
+  if (!validation.ok) return validation.result
+  const { encounterId } = validation.data
   const now = new Date()
   const expiryThreshold = new Date(now.getTime() - CLAIM_EXPIRY_MS)
 

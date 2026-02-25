@@ -3,6 +3,7 @@
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { searchPatientsSchema, type SearchPatientsInput } from "@/lib/validators/patient"
+import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import { Sex } from "@prisma/client"
 
@@ -31,18 +32,9 @@ export async function searchPatientsAction(
 ): Promise<ActionResult<SearchPatientsResponse>> {
   await requireRoleForAction(["REGISTRATION", "TRIAGE", "DOCTOR"])
 
-  const parsed = searchPatientsSchema.safeParse(input)
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid search parameters",
-      },
-    }
-  }
-
-  const { query, page, pageSize } = parsed.data
+  const validation = validateInput(searchPatientsSchema, input)
+  if (!validation.ok) return validation.result
+  const { query, page, pageSize } = validation.data
   const skip = (page - 1) * pageSize
 
   // Check if query is a date (YYYY-MM-DD or MM/DD/YYYY format)

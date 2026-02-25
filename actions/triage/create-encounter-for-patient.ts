@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
+import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import { z } from "zod"
 
@@ -21,18 +22,9 @@ export async function createEncounterForPatientAction(
 ): Promise<ActionResult<CreateEncounterResponse>> {
   const session = await requireRoleForAction(["TRIAGE"])
 
-  const parsed = inputSchema.safeParse(input)
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Invalid patient ID",
-      },
-    }
-  }
-
-  const { patientId } = parsed.data
+  const validation = validateInput(inputSchema, input)
+  if (!validation.ok) return validation.result
+  const { patientId } = validation.data
 
   const patient = await db.patient.findFirst({
     where: { id: patientId, deletedAt: null },

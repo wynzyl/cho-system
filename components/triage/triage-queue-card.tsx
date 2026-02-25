@@ -2,7 +2,7 @@
 
 import { User, Lock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { cn, formatTime, formatSex } from "@/lib/utils"
 import type { TriageQueueItem } from "@/actions/triage"
 
 export type QueueItemState = "selected" | "claimed-by-other" | "available" | "disabled"
@@ -12,27 +12,6 @@ interface TriageQueueCardProps {
   state: QueueItemState
   isSelected: boolean
   onClick: () => void
-}
-
-function formatTime(isoString: string): string {
-  return new Date(isoString).toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  })
-}
-
-function formatSex(sex: string): string {
-  switch (sex) {
-    case "MALE":
-      return "Male"
-    case "FEMALE":
-      return "Female"
-    case "OTHER":
-      return "Other"
-    default:
-      return "Unknown"
-  }
 }
 
 export function TriageQueueCard({ item, state, isSelected, onClick }: TriageQueueCardProps) {
