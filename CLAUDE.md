@@ -198,7 +198,7 @@ Creates/updates patient record
 
 Forwards to TRIAGE (status = WAIT_TRIAGE)
 
-C) TRIAGE (No adding new patient)
+C) TRIAGE 
 
 Purpose: Search/select queued patient, capture vital signs, then forward to Appointments.
 
