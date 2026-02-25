@@ -22,7 +22,7 @@ export function AppNavbar({ session, facility }: AppNavbarProps) {
           <Link href="/">
             <Image src="/UCHOlogo.jpg" alt="Urdaneta City Health Office System" width={32} height={32} className="rounded-full" />
           </Link>
-          <span className="font-semibold">Urdaneta City Health Office System</span>
+          <span className="font-semibold">Urdaneta City Health Management and Monitoring System</span>
         </div>
 
         <div className="hidden md:flex items-center">
