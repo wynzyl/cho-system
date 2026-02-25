@@ -58,6 +58,7 @@ export async function createEncounterForPatientAction(
   const existingEncounter = await db.encounter.findFirst({
     where: {
       patientId,
+      facilityId: session.facilityId,
       deletedAt: null,
       status: { not: "CANCELLED" },
       occurredAt: { gte: startOfDay, lte: endOfDay },

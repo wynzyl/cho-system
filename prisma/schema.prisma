@@ -233,8 +233,8 @@ model Barangay {
 
 model Patient {
   id           String  @id @default(uuid())
-  patientCode  String  @unique
-  philhealthNo               String?                    @unique @map("PhilhealthNo")
+  patientCode  String  // Partial unique index via migration (WHERE deletedAt IS NULL)
+  philhealthNo               String?                    @map("PhilhealthNo") // Partial unique index via migration
   philhealthMembershipType   PhilHealthMembershipType?
   philhealthEligibilityStart DateTime?
   philhealthEligibilityEnd   DateTime?
@@ -277,6 +277,12 @@ model Patient {
   @@index([phone])
   @@index([lastName, firstName])
   @@index([barangayId])
+  @@index([patientCode])
+  @@index([philhealthNo])
+
+  // Partial unique indexes (created via migration):
+  // CREATE UNIQUE INDEX "Patient_patientCode_active_unique" ON "Patient" ("patientCode") WHERE "deletedAt" IS NULL;
+  // CREATE UNIQUE INDEX "Patient_philhealthNo_active_unique" ON "Patient" ("PhilhealthNo") WHERE "deletedAt" IS NULL AND "PhilhealthNo" IS NOT NULL;
 }
 
 model Encounter {
