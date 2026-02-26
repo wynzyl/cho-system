@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
     href: "/patients",
     label: "Patients",
     icon: Users,
-    roles: ["ADMIN", "REGISTRATION"],
+    roles: ["ADMIN", "REGISTRATION", "TRIAGE"],
   },
   {
     href: "/triage",

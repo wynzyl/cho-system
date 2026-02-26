@@ -13,7 +13,11 @@ import {
   type TriageQueueItem,
 } from "@/actions/triage"
 
-export function TriagePageClient() {
+interface TriagePageClientProps {
+  canEditAllergies?: boolean
+}
+
+export function TriagePageClient({ canEditAllergies = false }: TriagePageClientProps) {
   const [encounters, setEncounters] = useState<TriageQueueItem[]>([])
   const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -181,7 +185,7 @@ export function TriagePageClient() {
       )}
 
       {/* Main Content - Two Panel Layout */}
-      <div className="mt-6 grid flex-1 gap-6 lg:grid-cols-[1fr_600px]">
+      <div className="mt-6 grid flex-1 gap-6 lg:grid-cols-[1fr_800px]">
         {/* Left Panel - Queue */}
         <div className="min-h-0 overflow-hidden rounded-lg border bg-card p-4">
           <TriageQueue
@@ -200,6 +204,9 @@ export function TriagePageClient() {
           <VitalsForm
             selectedEncounter={selectedEncounter}
             onSuccess={handleTriageSuccess}
+            canEditAllergies={canEditAllergies}
+            refreshKey={refreshKey}
+            onAllergyUpdate={() => setRefreshKey((k) => k + 1)}
           />
         </div>
       </div>
