@@ -75,6 +75,7 @@ export function AllergyCard({
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingAllergy, setEditingAllergy] = useState<PatientAllergyWithRecorder | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const activeAllergies = allergies.filter((a) => a.status === "ACTIVE")
@@ -83,24 +84,35 @@ export function AllergyCard({
   const handleRemoveAllergy = (allergyId: string) => {
     if (!confirm("Are you sure you want to remove this allergy?")) return
 
+    setError(null)
     startTransition(async () => {
       const result = await removeAllergyAction({ allergyId })
       if (result.ok) {
         onUpdate?.()
+      } else {
+        const message = result.error.message || "Failed to remove allergy"
+        setError(message)
+        console.error("removeAllergyAction failed:", result.error)
       }
     })
   }
 
   const handleConfirmNka = () => {
+    setError(null)
     startTransition(async () => {
       const result = await confirmNkaAction({ patientId })
       if (result.ok) {
         onUpdate?.()
+      } else {
+        const message = result.error.message || "Failed to confirm NKA"
+        setError(message)
+        console.error("confirmNkaAction failed:", result.error)
       }
     })
   }
 
   const handleFormSuccess = () => {
+    setError(null)
     setShowAddForm(false)
     setEditingAllergy(null)
     onUpdate?.()
@@ -161,7 +173,10 @@ export function AllergyCard({
             )}
             <Button
               size="sm"
-              onClick={() => setShowAddForm(true)}
+              onClick={() => {
+                setError(null)
+                setShowAddForm(true)
+              }}
               disabled={isPending}
               className="h-8 text-xs"
             >
@@ -171,6 +186,13 @@ export function AllergyCard({
           </div>
         )}
       </div>
+
+      {error && (
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
+          {error}
+        </div>
+      )}
 
       {/* Confirmation info */}
       {allergyConfirmedAt && (
@@ -272,7 +294,10 @@ export function AllergyCard({
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => setEditingAllergy(allergy)}
+                            onClick={() => {
+                setError(null)
+                setEditingAllergy(allergy)
+              }}
                             className="h-7 text-xs"
                           >
                             <Edit2 className="mr-1.5 h-3 w-3" />

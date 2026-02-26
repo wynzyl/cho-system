@@ -16,6 +16,18 @@ export async function updateAllergyAction(
   if (!validation.ok) return validation.result
   const data = validation.data
 
+  // Reject empty allergen after trim (whitespace-only input)
+  if (data.allergen !== undefined && !data.allergen.trim()) {
+    return {
+      ok: false,
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Allergen cannot be blank",
+        fieldErrors: { allergen: ["Allergen is required"] },
+      },
+    }
+  }
+
   // Verify allergy exists
   const existingAllergy = await db.patientAllergy.findFirst({
     where: { id: data.allergyId, deletedAt: null },
@@ -34,7 +46,7 @@ export async function updateAllergyAction(
 
   const allergy = await db.$transaction(async (tx) => {
     const updatedAllergy = await tx.patientAllergy.update({
-      where: { id: data.allergyId },
+      where: { id: data.allergyId, deletedAt: null },
       data: {
         ...(data.allergen !== undefined && { allergen: data.allergen.trim() }),
         ...(data.category !== undefined && { category: data.category }),

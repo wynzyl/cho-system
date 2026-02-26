@@ -63,7 +63,11 @@ export function AllergyForm({
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
     allergy?.category || undefined
   )
-  const [customAllergen, setCustomAllergen] = useState(false)
+  const initialCustomAllergen =
+    !!allergy?.allergen &&
+    (!allergy.category ||
+      !getAllergensByCategory(allergy.category).some((a) => a.name === allergy.allergen))
+  const [customAllergen, setCustomAllergen] = useState(initialCustomAllergen)
 
   const isEditing = !!allergy
 

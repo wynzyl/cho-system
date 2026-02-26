@@ -60,8 +60,16 @@ export function TriageQueueCard({ item, state, isSelected, onClick }: TriageQueu
               <p className="font-semibold text-foreground truncate">{item.patientName}</p>
               {/* Allergy indicator */}
               {item.allergyStatus === "HAS_ALLERGIES" && item.allergies.length > 0 && (
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-500/20" title={`Allergies: ${item.allergies.map(a => a.allergen).join(", ")}`}>
-                  <AlertTriangle className="h-3 w-3 text-red-500" />
+                <span
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-500/20"
+                  aria-label={`Allergies: ${item.allergies.map((a) => a.allergen).join(", ")}`}
+                  tabIndex={0}
+                  title={`Allergies: ${item.allergies.map((a) => a.allergen).join(", ")}`}
+                >
+                  <AlertTriangle className="h-3 w-3 text-red-500" aria-hidden />
+                  <span className="sr-only">
+                    Allergies: {item.allergies.map((a) => a.allergen).join(", ")}
+                  </span>
                 </span>
               )}
             </div>
