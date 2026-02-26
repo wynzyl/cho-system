@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AllergyBanner, AllergyCard } from "@/components/allergy"
+import { VitalInput } from "@/components/forms"
 import { submitTriageAction, type TriageQueueItem } from "@/actions/triage"
 import { getPatientAction, type PatientWithEncounters } from "@/actions/patients"
 
@@ -131,22 +132,21 @@ export function VitalsForm({
       chiefComplaint: selectedEncounter?.chiefComplaint ?? "",
       triageNotes: "",
     })
-  }, [selectedEncounter?.id, form])
+  }, [selectedEncounter?.id, selectedEncounter?.chiefComplaint, form])
 
   // Fetch full patient when selected for allergy management (re-fetches when refreshKey changes after allergy update)
   useEffect(() => {
     if (!selectedEncounter?.patientId || !canEditAllergies) {
-      setPatient(null)
       return
     }
     let cancelled = false
     getPatientAction(selectedEncounter.patientId).then((result) => {
       if (cancelled) return
-      if (result.ok) setPatient(result.data)
-      else setPatient(null)
+      setPatient(result.ok ? result.data : null)
     })
     return () => {
       cancelled = true
+      setPatient(null)
     }
   }, [selectedEncounter?.patientId, canEditAllergies, refreshKey])
 
@@ -217,7 +217,7 @@ export function VitalsForm({
       </CardHeader>
       <CardContent>
         {/* Allergy management section - when TRIAGE has edit access */}
-        {selectedEncounter && canEditAllergies && patient && (
+        {selectedEncounter && canEditAllergies && patient && patient.id === selectedEncounter.patientId && (
           <div className="mb-6">
             <AllergyCard
               patientId={patient.id}
@@ -232,7 +232,7 @@ export function VitalsForm({
         )}
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Blood Pressure */}
+          {/* Blood Pressure - kept inline due to unique dual-input layout */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Heart className="h-4 w-4 text-red-500" />
@@ -268,122 +268,81 @@ export function VitalsForm({
             )}
           </div>
 
-          {/* Heart Rate */}
-          <div className="space-y-2">
-            <Label htmlFor="heartRate" className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-pink-500" />
-              Heart Rate (bpm) <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="heartRate"
-              placeholder="e.g., 72"
-              {...form.register("heartRate")}
-              disabled={isFormDisabled}
-              type="number"
-              aria-invalid={!!errors.heartRate}
-            />
-            {errors.heartRate && (
-              <p className="text-sm text-destructive">{errors.heartRate.message}</p>
-            )}
-          </div>
+          {/* Vital Signs using VitalInput component */}
+          <VitalInput<VitalsFormData>
+            id="heartRate"
+            label="Heart Rate"
+            icon={Activity}
+            iconColor="text-pink-500"
+            unit="bpm"
+            placeholder="e.g., 72"
+            register={form.register}
+            error={errors.heartRate}
+            disabled={isFormDisabled}
+          />
 
-          {/* Temperature */}
-          <div className="space-y-2">
-            <Label htmlFor="temperatureC" className="flex items-center gap-2">
-              <Thermometer className="h-4 w-4 text-orange-500" />
-              Temperature (°C) <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="temperatureC"
-              placeholder="e.g., 36.5"
-              {...form.register("temperatureC")}
-              disabled={isFormDisabled}
-              type="number"
-              step="0.1"
-              aria-invalid={!!errors.temperatureC}
-            />
-            {errors.temperatureC && (
-              <p className="text-sm text-destructive">{errors.temperatureC.message}</p>
-            )}
-          </div>
+          <VitalInput<VitalsFormData>
+            id="temperatureC"
+            label="Temperature"
+            icon={Thermometer}
+            iconColor="text-orange-500"
+            unit="°C"
+            placeholder="e.g., 36.5"
+            register={form.register}
+            error={errors.temperatureC}
+            disabled={isFormDisabled}
+            step="0.1"
+          />
 
-          {/* Respiratory Rate */}
-          <div className="space-y-2">
-            <Label htmlFor="respiratoryRate" className="flex items-center gap-2">
-              <Wind className="h-4 w-4 text-blue-500" />
-              Respiratory Rate (breaths/min) <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="respiratoryRate"
-              placeholder="e.g., 16"
-              {...form.register("respiratoryRate")}
-              disabled={isFormDisabled}
-              type="number"
-              aria-invalid={!!errors.respiratoryRate}
-            />
-            {errors.respiratoryRate && (
-              <p className="text-sm text-destructive">{errors.respiratoryRate.message}</p>
-            )}
-          </div>
+          <VitalInput<VitalsFormData>
+            id="respiratoryRate"
+            label="Respiratory Rate"
+            icon={Wind}
+            iconColor="text-blue-500"
+            unit="breaths/min"
+            placeholder="e.g., 16"
+            register={form.register}
+            error={errors.respiratoryRate}
+            disabled={isFormDisabled}
+          />
 
-          {/* Oxygen Saturation */}
-          <div className="space-y-2">
-            <Label htmlFor="spo2" className="flex items-center gap-2">
-              <Droplets className="h-4 w-4 text-cyan-500" />
-              Oxygen Saturation (%) <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="spo2"
-              placeholder="e.g., 98"
-              {...form.register("spo2")}
-              disabled={isFormDisabled}
-              type="number"
-              aria-invalid={!!errors.spo2}
-            />
-            {errors.spo2 && (
-              <p className="text-sm text-destructive">{errors.spo2.message}</p>
-            )}
-          </div>
+          <VitalInput<VitalsFormData>
+            id="spo2"
+            label="Oxygen Saturation"
+            icon={Droplets}
+            iconColor="text-cyan-500"
+            unit="%"
+            placeholder="e.g., 98"
+            register={form.register}
+            error={errors.spo2}
+            disabled={isFormDisabled}
+          />
 
-          {/* Weight */}
-          <div className="space-y-2">
-            <Label htmlFor="weightKg" className="flex items-center gap-2">
-              <Scale className="h-4 w-4 text-green-500" />
-              Weight (kg) <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="weightKg"
-              placeholder="e.g., 65"
-              {...form.register("weightKg")}
-              disabled={isFormDisabled}
-              type="number"
-              step="0.1"
-              aria-invalid={!!errors.weightKg}
-            />
-            {errors.weightKg && (
-              <p className="text-sm text-destructive">{errors.weightKg.message}</p>
-            )}
-          </div>
+          <VitalInput<VitalsFormData>
+            id="weightKg"
+            label="Weight"
+            icon={Scale}
+            iconColor="text-green-500"
+            unit="kg"
+            placeholder="e.g., 65"
+            register={form.register}
+            error={errors.weightKg}
+            disabled={isFormDisabled}
+            step="0.1"
+          />
 
-          {/* Height */}
-          <div className="space-y-2">
-            <Label htmlFor="heightCm" className="flex items-center gap-2">
-              <Ruler className="h-4 w-4 text-emerald-500" />
-              Height (cm) <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="heightCm"
-              placeholder="e.g., 165"
-              {...form.register("heightCm")}
-              disabled={isFormDisabled}
-              type="number"
-              step="0.1"
-              aria-invalid={!!errors.heightCm}
-            />
-            {errors.heightCm && (
-              <p className="text-sm text-destructive">{errors.heightCm.message}</p>
-            )}
-          </div>
+          <VitalInput<VitalsFormData>
+            id="heightCm"
+            label="Height"
+            icon={Ruler}
+            iconColor="text-emerald-500"
+            unit="cm"
+            placeholder="e.g., 165"
+            register={form.register}
+            error={errors.heightCm}
+            disabled={isFormDisabled}
+            step="0.1"
+          />
 
           {/* Chief Complaint */}
           <div className="space-y-2">

@@ -71,6 +71,20 @@ function formatDate(date: Date | string | null): string {
   })
 }
 
+function formatDateTime(date: Date | string | null): string {
+  if (!date) return "-"
+  const d = new Date(date)
+  return d.toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }) + " " + d.toLocaleTimeString("en-PH", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  })
+}
+
 function calculateAge(birthDate: Date | string): number {
   const today = new Date()
   const birth = new Date(birthDate)
@@ -370,7 +384,7 @@ export function PatientDetailView({
             <Heart className="h-3.5 w-3.5" />
             Demographics
           </h3>
-          <div className="space-y-1">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
             <InfoRow
               icon={Heart}
               label="Religion"
@@ -395,57 +409,60 @@ export function PatientDetailView({
         </div>
       </div>
 
-      {/* PhilHealth Card */}
-      <div className="clinical-card rounded-xl border border-border/50 p-5">
-        <h3 className="clinical-section-header mb-4">
-          <Shield className="h-3.5 w-3.5" />
-          PhilHealth
-        </h3>
-        {patient.philhealthNo || patient.philhealthMembershipType ? (
-          <div className="space-y-1">
-            <InfoRow icon={CreditCard} label="PIN" value={patient.philhealthNo} mono />
-            <InfoRow
-              icon={Shield}
-              label="Membership"
-              value={formatEnumLabel(patient.philhealthMembershipType, PHILHEALTH_MEMBERSHIP_TYPE_OPTIONS)}
-            />
-            {(patient.philhealthEligibilityStart || patient.philhealthEligibilityEnd) && (
+      {/* PhilHealth + Allergy Cards - side by side */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* PhilHealth Card */}
+        <div className="clinical-card rounded-xl border border-border/50 p-5">
+          <h3 className="clinical-section-header mb-4">
+            <Shield className="h-3.5 w-3.5" />
+            PhilHealth
+          </h3>
+          {patient.philhealthNo || patient.philhealthMembershipType ? (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+              <InfoRow icon={CreditCard} label="PIN" value={patient.philhealthNo} mono />
               <InfoRow
-                icon={CalendarRange}
-                label="Eligibility"
-                value={
-                  patient.philhealthEligibilityStart && patient.philhealthEligibilityEnd
-                    ? `${formatDate(patient.philhealthEligibilityStart)} - ${formatDate(patient.philhealthEligibilityEnd)}`
-                    : patient.philhealthEligibilityStart
-                      ? `From ${formatDate(patient.philhealthEligibilityStart)}`
-                      : `Until ${formatDate(patient.philhealthEligibilityEnd)}`
-                }
+                icon={Shield}
+                label="Membership"
+                value={formatEnumLabel(patient.philhealthMembershipType, PHILHEALTH_MEMBERSHIP_TYPE_OPTIONS)}
               />
-            )}
-            {patient.philhealthMembershipType === "DEPENDENT" && patient.philhealthPrincipalPin && (
-              <InfoRow
-                icon={Users}
-                label="Principal PIN"
-                value={patient.philhealthPrincipalPin}
-                mono
-              />
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No PhilHealth information on file</p>
-        )}
-      </div>
+              {(patient.philhealthEligibilityStart || patient.philhealthEligibilityEnd) && (
+                <InfoRow
+                  icon={CalendarRange}
+                  label="Eligibility"
+                  value={
+                    patient.philhealthEligibilityStart && patient.philhealthEligibilityEnd
+                      ? `${formatDate(patient.philhealthEligibilityStart)} - ${formatDate(patient.philhealthEligibilityEnd)}`
+                      : patient.philhealthEligibilityStart
+                        ? `From ${formatDate(patient.philhealthEligibilityStart)}`
+                        : `Until ${formatDate(patient.philhealthEligibilityEnd)}`
+                  }
+                />
+              )}
+              {patient.philhealthMembershipType === "DEPENDENT" && patient.philhealthPrincipalPin && (
+                <InfoRow
+                  icon={Users}
+                  label="Principal PIN"
+                  value={patient.philhealthPrincipalPin}
+                  mono
+                />
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No PhilHealth information on file</p>
+          )}
+        </div>
 
-      {/* Allergy Card */}
-      <AllergyCard
-        patientId={patient.id}
-        allergyStatus={patient.allergyStatus ?? "UNKNOWN"}
-        allergies={patient.allergies ?? []}
-        allergyConfirmedAt={patient.allergyConfirmedAt}
-        allergyConfirmedBy={patient.allergyConfirmedBy}
-        canEdit={canEditAllergies}
-        onUpdate={handleAllergyUpdate}
-      />
+        {/* Allergy Card */}
+        <AllergyCard
+          patientId={patient.id}
+          allergyStatus={patient.allergyStatus ?? "UNKNOWN"}
+          allergies={patient.allergies ?? []}
+          allergyConfirmedAt={patient.allergyConfirmedAt}
+          allergyConfirmedBy={patient.allergyConfirmedBy}
+          canEdit={canEditAllergies}
+          onUpdate={handleAllergyUpdate}
+        />
+      </div>
 
       {/* Notes */}
       {patient.notes && (
@@ -503,7 +520,7 @@ export function PatientDetailView({
                     }}
                   >
                     <TableCell className="font-mono text-sm">
-                      {formatDate(encounter.occurredAt)}
+                      {formatDateTime(encounter.occurredAt)}
                     </TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadgeVariant(encounter.status)}>

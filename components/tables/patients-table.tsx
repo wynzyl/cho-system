@@ -47,6 +47,20 @@ function formatDate(date: Date | null): string {
   })
 }
 
+function formatDateTime(date: Date | null): string {
+  if (!date) return "-"
+  const d = new Date(date)
+  return d.toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }) + " " + d.toLocaleTimeString("en-PH", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  })
+}
+
 function calculateAge(birthDate: Date): number {
   const today = new Date()
   const birth = new Date(birthDate)
@@ -139,7 +153,7 @@ export function PatientsTable({
     }),
     columnHelper.accessor("lastVisit", {
       header: "Last Visit",
-      cell: (info) => formatDate(info.getValue()),
+      cell: (info) => formatDateTime(info.getValue()),
     }),
     columnHelper.display({
       id: "actions",
