@@ -1,7 +1,9 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
+import { EDIT_ALLERGIES_ROLES } from "@/lib/auth/permissions"
 import { confirmNkaSchema, type ConfirmNkaInput } from "@/lib/validators/patient"
 import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
@@ -10,7 +12,7 @@ import { Patient } from "@prisma/client"
 export async function confirmNkaAction(
   input: ConfirmNkaInput
 ): Promise<ActionResult<Patient>> {
-  const session = await requireRoleForAction(["REGISTRATION", "TRIAGE", "DOCTOR", "ADMIN"])
+  const session = await requireRoleForAction(EDIT_ALLERGIES_ROLES)
 
   const validation = validateInput(confirmNkaSchema, input)
   if (!validation.ok) return validation.result
@@ -75,6 +77,8 @@ export async function confirmNkaAction(
 
     return updated
   })
+
+  revalidatePath(`/patients/${data.patientId}`)
 
   return {
     ok: true,

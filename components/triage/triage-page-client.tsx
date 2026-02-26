@@ -12,6 +12,7 @@ import {
   releaseEncounterAction,
   type TriageQueueItem,
 } from "@/actions/triage"
+import { getPatientAction, type PatientWithEncounters } from "@/actions/patients"
 
 interface TriagePageClientProps {
   canEditAllergies?: boolean
@@ -27,6 +28,7 @@ export function TriagePageClient({ canEditAllergies = false }: TriagePageClientP
   const [refreshKey, setRefreshKey] = useState(0)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [pendingSelectId, setPendingSelectId] = useState<string | null>(null)
+  const [patient, setPatient] = useState<PatientWithEncounters | null>(null)
 
   // Track current claim for cleanup
   const claimedEncounterIdRef = useRef<string | null>(null)
@@ -97,6 +99,27 @@ export function TriagePageClient({ canEditAllergies = false }: TriagePageClientP
       cancelled = true
     }
   }, [refreshKey, pendingSelectId])
+
+  // Fetch full patient data for allergy management
+  useEffect(() => {
+    if (!selectedEncounter?.patientId || !canEditAllergies) {
+      setPatient(null)
+      return
+    }
+    let cancelled = false
+    getPatientAction(selectedEncounter.patientId)
+      .then((result) => {
+        if (cancelled) return
+        if (result.ok) setPatient(result.data)
+        else setPatient(null)
+      })
+      .catch(() => {
+        if (!cancelled) setPatient(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [selectedEncounter?.patientId, canEditAllergies, refreshKey])
 
   // Release claim on unmount or page unload
   useEffect(() => {
@@ -205,7 +228,7 @@ export function TriagePageClient({ canEditAllergies = false }: TriagePageClientP
             selectedEncounter={selectedEncounter}
             onSuccess={handleTriageSuccess}
             canEditAllergies={canEditAllergies}
-            refreshKey={refreshKey}
+            patient={patient}
             onAllergyUpdate={() => setRefreshKey((k) => k + 1)}
           />
         </div>

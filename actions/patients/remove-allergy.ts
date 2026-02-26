@@ -1,7 +1,9 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
+import { EDIT_ALLERGIES_ROLES } from "@/lib/auth/permissions"
 import { removeAllergySchema, type RemoveAllergyInput } from "@/lib/validators/patient"
 import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
@@ -9,7 +11,7 @@ import type { ActionResult } from "@/lib/auth/types"
 export async function removeAllergyAction(
   input: RemoveAllergyInput
 ): Promise<ActionResult<{ success: true }>> {
-  const session = await requireRoleForAction(["REGISTRATION", "TRIAGE", "DOCTOR", "ADMIN"])
+  const session = await requireRoleForAction(EDIT_ALLERGIES_ROLES)
 
   const validation = validateInput(removeAllergySchema, input)
   if (!validation.ok) return validation.result
@@ -76,6 +78,8 @@ export async function removeAllergyAction(
       },
     })
   })
+
+  revalidatePath(`/patients/${existingAllergy.patientId}`)
 
   return {
     ok: true,

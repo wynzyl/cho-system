@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic"
-import { requireRole } from "@/lib/auth"
+import { requireRole, EDIT_ALLERGIES_ROLES } from "@/lib/auth"
 
 const TriagePageClient = dynamic(
   () =>
@@ -11,7 +11,7 @@ const TriagePageClient = dynamic(
 
 export default async function TriagePage() {
   const session = await requireRole(["ADMIN", "TRIAGE"])
-  const canEditAllergies = ["REGISTRATION", "TRIAGE", "DOCTOR", "ADMIN"].includes(session.role)
+  const canEditAllergies = EDIT_ALLERGIES_ROLES.includes(session.role)
 
   return <TriagePageClient canEditAllergies={canEditAllergies} />
 }

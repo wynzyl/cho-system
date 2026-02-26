@@ -1,7 +1,9 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
+import { EDIT_ALLERGIES_ROLES } from "@/lib/auth/permissions"
 import { addAllergySchema, type AddAllergyInput } from "@/lib/validators/patient"
 import { validateInput, emptyToNull } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
@@ -10,7 +12,7 @@ import { PatientAllergy } from "@prisma/client"
 export async function addAllergyAction(
   input: AddAllergyInput
 ): Promise<ActionResult<PatientAllergy>> {
-  const session = await requireRoleForAction(["REGISTRATION", "TRIAGE", "DOCTOR", "ADMIN"])
+  const session = await requireRoleForAction(EDIT_ALLERGIES_ROLES)
 
   const validation = validateInput(addAllergySchema, input)
   if (!validation.ok) return validation.result
@@ -74,6 +76,8 @@ export async function addAllergyAction(
 
     return newAllergy
   })
+
+  revalidatePath(`/patients/${data.patientId}`)
 
   return {
     ok: true,
