@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { PatientForm } from "@/components/forms/patient-form"
+import { AllergyBanner, AllergyCard } from "@/components/allergy"
 import { createEncounterAction } from "@/actions/encounters"
 import type { PatientWithEncounters } from "@/actions/patients"
 import {
@@ -26,7 +27,6 @@ import {
   Pencil,
   PlayCircle,
   Loader2,
-  Info,
   User,
   Calendar,
   Phone,
@@ -57,6 +57,7 @@ function formatEnumLabel(
 interface PatientDetailViewProps {
   patient: PatientWithEncounters
   canEdit: boolean
+  canEditAllergies: boolean
   canStartEncounter: boolean
   isEditMode: boolean
 }
@@ -134,6 +135,7 @@ function InfoRow({
 export function PatientDetailView({
   patient,
   canEdit,
+  canEditAllergies,
   canStartEncounter,
   isEditMode,
 }: PatientDetailViewProps) {
@@ -214,8 +216,23 @@ export function PatientDetailView({
     .filter(Boolean)
     .join(", ")
 
+  const handleAllergyUpdate = () => {
+    router.refresh()
+  }
+
+  // Get active allergies for banner
+  const activeAllergies = (patient.allergies ?? [])
+    .filter((a) => a.status === "ACTIVE")
+    .map((a) => ({ allergen: a.allergen, severity: a.severity }))
+
   return (
     <div className="space-y-6">
+      {/* Allergy Banner - Always visible at top */}
+      <AllergyBanner
+        status={patient.allergyStatus ?? "UNKNOWN"}
+        allergies={activeAllergies}
+      />
+
       {/* Active encounter alert */}
       {patient.todayEncounter && (
         <div className="clinical-animate-in flex items-center justify-between rounded-xl border border-primary/30 bg-primary/5 px-5 py-4">
@@ -418,6 +435,17 @@ export function PatientDetailView({
           <p className="text-sm text-muted-foreground">No PhilHealth information on file</p>
         )}
       </div>
+
+      {/* Allergy Card */}
+      <AllergyCard
+        patientId={patient.id}
+        allergyStatus={patient.allergyStatus ?? "UNKNOWN"}
+        allergies={patient.allergies ?? []}
+        allergyConfirmedAt={patient.allergyConfirmedAt}
+        allergyConfirmedBy={patient.allergyConfirmedBy}
+        canEdit={canEditAllergies}
+        onUpdate={handleAllergyUpdate}
+      />
 
       {/* Notes */}
       {patient.notes && (

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AllergyBanner } from "@/components/allergy"
 import { submitTriageAction, type TriageQueueItem } from "@/actions/triage"
 
 const vitalsFormSchema = z.object({
@@ -169,8 +170,16 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
           Record Vital Signs
         </CardTitle>
         {selectedEncounter ? (
-          <div className="rounded-md bg-muted px-3 py-2 text-sm">
-            Recording vitals for: <span className="font-semibold">{selectedEncounter.patientName}</span>
+          <div className="space-y-3">
+            <div className="rounded-md bg-muted px-3 py-2 text-sm">
+              Recording vitals for: <span className="font-semibold">{selectedEncounter.patientName}</span>
+            </div>
+            {/* Allergy Banner */}
+            <AllergyBanner
+              status={selectedEncounter.allergyStatus}
+              allergies={selectedEncounter.allergies}
+              compact
+            />
           </div>
         ) : (
           <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">

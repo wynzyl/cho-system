@@ -1,6 +1,6 @@
 "use client"
 
-import { User, Lock } from "lucide-react"
+import { User, Lock, AlertTriangle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn, formatTime, formatSex } from "@/lib/utils"
 import type { TriageQueueItem } from "@/actions/triage"
@@ -56,7 +56,23 @@ export function TriageQueueCard({ item, state, isSelected, onClick }: TriageQueu
             )}
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-foreground truncate">{item.patientName}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-foreground truncate">{item.patientName}</p>
+              {/* Allergy indicator */}
+              {item.allergyStatus === "HAS_ALLERGIES" && item.allergies.length > 0 && (
+                <span
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-500/20"
+                  aria-label={`Allergies: ${item.allergies.map((a) => a.allergen).join(", ")}`}
+                  tabIndex={0}
+                  title={`Allergies: ${item.allergies.map((a) => a.allergen).join(", ")}`}
+                >
+                  <AlertTriangle className="h-3 w-3 text-red-500" aria-hidden />
+                  <span className="sr-only">
+                    Allergies: {item.allergies.map((a) => a.allergen).join(", ")}
+                  </span>
+                </span>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground">
               {item.patientCode} &bull; {item.age}y &bull; {formatSex(item.sex)}
             </p>

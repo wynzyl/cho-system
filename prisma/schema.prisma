@@ -122,6 +122,24 @@ enum AuditAction {
   OVERRIDE
 }
 
+enum AllergySeverity {
+  MILD
+  MODERATE
+  SEVERE
+}
+
+enum AllergyStatus {
+  ACTIVE
+  INACTIVE
+  RESOLVED
+}
+
+enum PatientAllergyStatus {
+  UNKNOWN       // Yellow banner - "Allergy status unconfirmed"
+  NKA           // Green banner - "No Known Allergies"
+  HAS_ALLERGIES // Red banner - shows active allergies
+}
+
 model Facility {
   id       String       @id @default(uuid())
   code     String       @unique
@@ -211,6 +229,11 @@ model User {
   diagnosisCreatedBy      Diagnosis[]    @relation("DiagnosisCreatedBy")
   triageRecordsRecordedBy TriageRecord[] @relation("TriageRecordRecordedBy")
 
+  // Allergy relations
+  patientAllergyConfirmedBy Patient[]        @relation("PatientAllergyConfirmedBy")
+  allergiesRecordedBy       PatientAllergy[] @relation("AllergyRecordedBy")
+  allergiesDeletedBy        PatientAllergy[] @relation("AllergyDeletedBy")
+
   @@index([role])
   @@index([isActive])
   @@index([facilityId])
@@ -263,6 +286,12 @@ model Patient {
 
   notes String?
 
+  // Allergy tracking
+  allergyStatus       PatientAllergyStatus @default(UNKNOWN)
+  allergyConfirmedAt  DateTime?
+  allergyConfirmedById String?
+  allergyConfirmedBy  User?    @relation("PatientAllergyConfirmedBy", fields: [allergyConfirmedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -271,6 +300,7 @@ model Patient {
   deletedBy   User?     @relation("PatientDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
 
   encounters Encounter[]
+  allergies  PatientAllergy[]
 
   @@index([lastName])
   @@index([firstName])
@@ -280,6 +310,7 @@ model Patient {
   @@index([barangayId])
   @@index([patientCode])
   @@index([philhealthNo])
+  @@index([allergyStatus])
 
   // Partial unique indexes (created via migration):
   // CREATE UNIQUE INDEX "Patient_patientCode_active_unique" ON "Patient" ("patientCode") WHERE "deletedAt" IS NULL;
@@ -721,6 +752,39 @@ model AuditLog {
   @@index([createdAt])
   @@index([userId])
   @@index([entity, entityId])
+}
+
+// ============================================================================
+// PATIENT ALLERGIES
+// ============================================================================
+
+model PatientAllergy {
+  id        String @id @default(uuid())
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  allergen String          // e.g., "Penicillin", "Shrimp", "Latex"
+  category String?         // e.g., "Drug", "Food", "Environmental"
+  severity AllergySeverity // MILD, MODERATE, SEVERE
+  reaction String?         // e.g., "Anaphylaxis", "Hives", "Swelling"
+  status   AllergyStatus   @default(ACTIVE) // ACTIVE, INACTIVE, RESOLVED
+  notes    String?
+
+  recordedAt   DateTime @default(now())
+  recordedById String?
+  recordedBy   User?    @relation("AllergyRecordedBy", fields: [recordedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  updatedAt DateTime @updatedAt
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("AllergyDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  @@index([patientId])
+  @@index([allergen])
+  @@index([severity])
+  @@index([status])
+  @@index([deletedAt])
 }
 
 // ============================================================================

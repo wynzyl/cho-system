@@ -6,7 +6,8 @@
       "Bash(npm run build:*)",
       "Bash(npm run lint:*)",
       "Bash(npx prisma generate:*)",
-      "Bash(npx prisma db execute:*)"
+      "Bash(npx prisma db execute:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

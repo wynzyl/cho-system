@@ -1,4 +1,4 @@
-export { getTriageQueueAction, type TriageQueueItem } from "./get-triage-queue"
+export { getTriageQueueAction, type TriageQueueItem, type PatientAllergyInfo } from "./get-triage-queue"
 export { submitTriageAction } from "./submit-triage"
 export {
   createEncounterForPatientAction,
