@@ -89,7 +89,7 @@ const session = await requireRoleForAction(["PHARMACY"])  // throws AuthError("F
 ## UI Design
 
 **Always invoke the frontend-design skill before writing any frontend code.**
-**Doctors Dashboard should be compact and easy access to patients informations.
+**Doctors' dashboard should be compact and provide easy access to patient information.**
 
 ## Database Rules
 
@@ -156,7 +156,7 @@ PhilHealth data captured in patient registration (not separate module):
 - No external API for MVP
 
 
-### RULES NON NEGOTIABLE
+### Rules (Non-negotiable)
 - Do NOT build dashboards before scope logic exists. Multi-facility
 enforcement is mandatory from Day 1.
 

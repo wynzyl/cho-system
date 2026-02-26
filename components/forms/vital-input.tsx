@@ -16,6 +16,7 @@ interface VitalInputProps<T extends FieldValues> {
   type?: "text" | "number"
   step?: string
   className?: string
+  required?: boolean
 }
 
 export function VitalInput<T extends FieldValues>({
@@ -31,6 +32,7 @@ export function VitalInput<T extends FieldValues>({
   type = "number",
   step,
   className = "",
+  required = true,
 }: VitalInputProps<T>) {
   const displayLabel = unit ? `${label} (${unit})` : label
 
@@ -38,7 +40,8 @@ export function VitalInput<T extends FieldValues>({
     <div className={`space-y-2 ${className}`}>
       <Label htmlFor={id} className="flex items-center gap-2">
         <Icon className={`h-4 w-4 ${iconColor}`} />
-        {displayLabel} <span className="text-destructive">*</span>
+        {displayLabel}
+        {required && <span className="text-destructive">*</span>}
       </Label>
       <Input
         id={id}
@@ -47,10 +50,11 @@ export function VitalInput<T extends FieldValues>({
         disabled={disabled}
         type={type}
         step={step}
+        required={required}
         aria-invalid={!!error}
       />
       {error && (
-        <p className="text-sm text-destructive">{error.message}</p>
+        <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error.message}</p>
       )}
     </div>
   )
