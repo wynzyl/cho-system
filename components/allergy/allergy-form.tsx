@@ -94,9 +94,11 @@ export function AllergyForm({
             setError(result.error.message)
           }
         } else {
+          // addAllergySchema does not accept status - new allergies are always ACTIVE
+          const { status: _status, ...addData } = data
           const result = await addAllergyAction({
             patientId,
-            ...data,
+            ...addData,
           })
           if (result.ok) {
             onSuccess()

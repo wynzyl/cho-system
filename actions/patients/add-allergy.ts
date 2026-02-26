@@ -10,7 +10,7 @@ import { PatientAllergy } from "@prisma/client"
 export async function addAllergyAction(
   input: AddAllergyInput
 ): Promise<ActionResult<PatientAllergy>> {
-  const session = await requireRoleForAction(["REGISTRATION", "TRIAGE", "DOCTOR"])
+  const session = await requireRoleForAction(["REGISTRATION", "TRIAGE", "DOCTOR", "ADMIN"])
 
   const validation = validateInput(addAllergySchema, input)
   if (!validation.ok) return validation.result

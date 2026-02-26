@@ -9,7 +9,7 @@ import type { ActionResult } from "@/lib/auth/types"
 export async function removeAllergyAction(
   input: RemoveAllergyInput
 ): Promise<ActionResult<{ success: true }>> {
-  const session = await requireRoleForAction(["REGISTRATION", "TRIAGE", "DOCTOR"])
+  const session = await requireRoleForAction(["REGISTRATION", "TRIAGE", "DOCTOR", "ADMIN"])
 
   const validation = validateInput(removeAllergySchema, input)
   if (!validation.ok) return validation.result

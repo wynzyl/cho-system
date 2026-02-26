@@ -10,7 +10,7 @@ import { Patient } from "@prisma/client"
 export async function confirmNkaAction(
   input: ConfirmNkaInput
 ): Promise<ActionResult<Patient>> {
-  const session = await requireRoleForAction(["REGISTRATION", "TRIAGE", "DOCTOR"])
+  const session = await requireRoleForAction(["REGISTRATION", "TRIAGE", "DOCTOR", "ADMIN"])
 
   const validation = validateInput(confirmNkaSchema, input)
   if (!validation.ok) return validation.result

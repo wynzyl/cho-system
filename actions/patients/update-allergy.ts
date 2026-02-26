@@ -10,7 +10,7 @@ import { PatientAllergy } from "@prisma/client"
 export async function updateAllergyAction(
   input: UpdateAllergyInput
 ): Promise<ActionResult<PatientAllergy>> {
-  const session = await requireRoleForAction(["REGISTRATION", "TRIAGE", "DOCTOR"])
+  const session = await requireRoleForAction(["REGISTRATION", "TRIAGE", "DOCTOR", "ADMIN"])
 
   const validation = validateInput(updateAllergySchema, input)
   if (!validation.ok) return validation.result
@@ -44,6 +44,47 @@ export async function updateAllergyAction(
         ...(data.notes !== undefined && { notes: data.notes || null }),
       },
     })
+
+    // Sync patient allergyStatus when allergy status changes
+    if (data.status !== undefined && data.status !== existingAllergy.status) {
+      const statusDeactivated =
+        (data.status === "INACTIVE" || data.status === "RESOLVED") &&
+        existingAllergy.status === "ACTIVE"
+
+      const statusReactivated =
+        data.status === "ACTIVE" &&
+        (existingAllergy.status === "INACTIVE" || existingAllergy.status === "RESOLVED")
+
+      if (statusDeactivated) {
+        const remainingAllergies = await tx.patientAllergy.count({
+          where: {
+            patientId: existingAllergy.patientId,
+            deletedAt: null,
+            status: "ACTIVE",
+          },
+        })
+
+        if (remainingAllergies === 0) {
+          await tx.patient.update({
+            where: { id: existingAllergy.patientId },
+            data: {
+              allergyStatus: "NKA",
+              allergyConfirmedAt: new Date(),
+              allergyConfirmedById: session.userId,
+            },
+          })
+        }
+      } else if (statusReactivated) {
+        await tx.patient.update({
+          where: { id: existingAllergy.patientId },
+          data: {
+            allergyStatus: "HAS_ALLERGIES",
+            allergyConfirmedAt: new Date(),
+            allergyConfirmedById: session.userId,
+          },
+        })
+      }
+    }
 
     // Create audit log
     await tx.auditLog.create({
