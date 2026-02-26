@@ -52,3 +52,39 @@ export const updatePatientSchema = basePatientSchema.partial().refine(
 export type SearchPatientsInput = z.infer<typeof searchPatientsSchema>
 export type CreatePatientInput = z.infer<typeof createPatientSchema>
 export type UpdatePatientInput = z.infer<typeof updatePatientSchema>
+
+// ============================================================================
+// Allergy Schemas
+// ============================================================================
+
+export const addAllergySchema = z.strictObject({
+  patientId: z.uuid("Patient ID is required"),
+  allergen: z.string().min(1, "Allergen is required").max(100),
+  category: z.enum(["Drug", "Food", "Environmental", "Other"]).optional(),
+  severity: z.enum(["MILD", "MODERATE", "SEVERE"], { message: "Severity is required" }),
+  reaction: z.string().max(200).optional(),
+  notes: z.string().max(500).optional(),
+})
+
+export const updateAllergySchema = z.strictObject({
+  allergyId: z.uuid("Allergy ID is required"),
+  allergen: z.string().min(1, "Allergen is required").max(100).optional(),
+  category: z.enum(["Drug", "Food", "Environmental", "Other"]).optional(),
+  severity: z.enum(["MILD", "MODERATE", "SEVERE"]).optional(),
+  reaction: z.string().max(200).optional().nullable(),
+  status: z.enum(["ACTIVE", "INACTIVE", "RESOLVED"]).optional(),
+  notes: z.string().max(500).optional().nullable(),
+})
+
+export const removeAllergySchema = z.strictObject({
+  allergyId: z.uuid("Allergy ID is required"),
+})
+
+export const confirmNkaSchema = z.strictObject({
+  patientId: z.uuid("Patient ID is required"),
+})
+
+export type AddAllergyInput = z.infer<typeof addAllergySchema>
+export type UpdateAllergyInput = z.infer<typeof updateAllergySchema>
+export type RemoveAllergyInput = z.infer<typeof removeAllergySchema>
+export type ConfirmNkaInput = z.infer<typeof confirmNkaSchema>

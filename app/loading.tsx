@@ -4,7 +4,7 @@ export default function Loading() {
   return (
     <div className="flex-center size-full h-screen gap-3 text-white">
       <Image
-        src="/loader.gif"
+        src="/loader.svg"
         alt="loader"
         width={40}
         height={3240}

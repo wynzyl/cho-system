@@ -20,6 +20,23 @@ export type {
 export { PHILHEALTH_MEMBERSHIP_TYPE_OPTIONS } from "./philhealth"
 export type { PhilHealthMembershipTypeValue } from "./philhealth"
 
+// Allergy constants
+export {
+  ALLERGY_SEVERITY_OPTIONS,
+  ALLERGY_STATUS_OPTIONS,
+  PATIENT_ALLERGY_STATUS_OPTIONS,
+  COMMON_ALLERGENS,
+  ALLERGEN_CATEGORIES,
+  getAllergensByCategory,
+  getSeverityColor,
+} from "./allergy"
+export type {
+  AllergySeverityValue,
+  AllergyStatusValue,
+  PatientAllergyStatusValue,
+  AllergenCategory,
+} from "./allergy"
+
 // Diagnosis taxonomy constants
 export {
   DIAGNOSIS_CATEGORY_CODES,

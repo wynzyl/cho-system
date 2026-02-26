@@ -5,7 +5,12 @@ import { requireRoleForAction } from "@/lib/auth/guards"
 import { getTriageQueueSchema, type GetTriageQueueInput } from "@/lib/validators/triage"
 import { validateInput, calculateAge } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
-import type { Sex } from "@prisma/client"
+import type { Sex, PatientAllergyStatus, AllergySeverity } from "@prisma/client"
+
+export type PatientAllergyInfo = {
+  allergen: string
+  severity: AllergySeverity
+}
 
 export type TriageQueueItem = {
   id: string // encounter ID
@@ -20,6 +25,9 @@ export type TriageQueueItem = {
   claimedById: string | null
   claimedAt: string | null // ISO string
   claimedByName: string | null
+  // Allergy information
+  allergyStatus: PatientAllergyStatus
+  allergies: PatientAllergyInfo[]
 }
 
 // Pre-compiled regex patterns for priority detection (word-boundary matching)
@@ -97,6 +105,12 @@ export async function getTriageQueueAction(
           lastName: true,
           birthDate: true,
           sex: true,
+          allergyStatus: true,
+          allergies: {
+            where: { deletedAt: null, status: "ACTIVE" },
+            select: { allergen: true, severity: true },
+            orderBy: { severity: "desc" },
+          },
         },
       },
       claimedBy: {
@@ -121,6 +135,11 @@ export async function getTriageQueueAction(
     claimedById: encounter.claimedById,
     claimedAt: encounter.claimedAt?.toISOString() ?? null,
     claimedByName: encounter.claimedBy?.name ?? null,
+    allergyStatus: encounter.patient.allergyStatus,
+    allergies: encounter.patient.allergies.map((a) => ({
+      allergen: a.allergen,
+      severity: a.severity,
+    })),
   }))
 
   return {

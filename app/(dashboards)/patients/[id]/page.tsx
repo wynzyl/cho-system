@@ -26,6 +26,7 @@ export default async function PatientDetailPage({
 
   const patient = result.data
   const canEdit = session.role === "REGISTRATION" || session.role === "ADMIN"
+  const canEditAllergies = ["REGISTRATION", "TRIAGE", "DOCTOR", "ADMIN"].includes(session.role)
   const canStartEncounter = session.role === "REGISTRATION" || session.role === "ADMIN"
   const isEditMode = edit === "true" && canEdit
 
@@ -44,6 +45,7 @@ export default async function PatientDetailPage({
       <PatientDetailView
         patient={patient}
         canEdit={canEdit}
+        canEditAllergies={canEditAllergies}
         canStartEncounter={canStartEncounter}
         isEditMode={isEditMode}
       />

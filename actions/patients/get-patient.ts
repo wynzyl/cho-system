@@ -3,13 +3,17 @@
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import type { ActionResult } from "@/lib/auth/types"
-import { Patient, EncounterStatus, Barangay } from "@prisma/client"
+import { Patient, EncounterStatus, Barangay, PatientAllergy } from "@prisma/client"
 
 export type TodayEncounter = {
   id: string
   status: EncounterStatus
   occurredAt: Date
 } | null
+
+export type PatientAllergyWithRecorder = PatientAllergy & {
+  recordedBy: { id: string; name: string } | null
+}
 
 export type PatientWithEncounters = Patient & {
   barangay: Barangay | null
@@ -19,6 +23,8 @@ export type PatientWithEncounters = Patient & {
     status: EncounterStatus
     chiefComplaint: string | null
   }[]
+  allergies: PatientAllergyWithRecorder[]
+  allergyConfirmedBy: { id: string; name: string } | null
   todayEncounter: TodayEncounter
 }
 
@@ -41,6 +47,18 @@ export async function getPatientAction(
     where: { id: patientId, deletedAt: null },
     include: {
       barangay: true,
+      allergyConfirmedBy: {
+        select: { id: true, name: true },
+      },
+      allergies: {
+        where: { deletedAt: null },
+        orderBy: [{ status: "asc" }, { severity: "desc" }, { recordedAt: "desc" }],
+        include: {
+          recordedBy: {
+            select: { id: true, name: true },
+          },
+        },
+      },
       encounters: {
         where: { deletedAt: null },
         orderBy: { occurredAt: "desc" },
