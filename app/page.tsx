@@ -14,7 +14,7 @@ export default async function HomePage() {
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <h1 className="text-3xl font-bold mb-2">Urdaneta City Health Management and Monitoring System</h1>
       <p className="text-muted-foreground mb-6">
-        A comprehensive system for managing and monitoring the health of the city's residents.
+        A comprehensive system for managing and monitoring the health of the city&apos;s residents.
       </p>
       <Button asChild>
         <Link href="/login">Sign In</Link>

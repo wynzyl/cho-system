@@ -12,6 +12,7 @@ CHO (City Health Office) System - A medical records and clinic management system
 - **Auth** - Login/logout, JWT sessions, role-based guards
 - **Patients Module** - Search, create, edit, detail view, PhilHealth fields
 - **Triage Module** - Queue (FIFO), vitals capture, status workflow
+- **Allergy Module** - Patient allergy tracking with severity levels, allergy banner, NKA confirmation
 - **Database Schema** - 20+ models fully defined with soft deletes
 - **Reference Data** - 34 barangays, 10 diagnosis categories, 86 subcategories, 148 ICD-10 codes
 - **App Shell** - Layout, sidebar, navbar, responsive design
@@ -88,6 +89,7 @@ const session = await requireRoleForAction(["PHARMACY"])  // throws AuthError("F
 ## UI Design
 
 **Always invoke the frontend-design skill before writing any frontend code.**
+**Doctors Dashboard should be compact and easy access to patients informations.
 
 ## Database Rules
 
@@ -116,12 +118,14 @@ Patients (create/search) → Triage (vitals) → Appointments (doctor) → Lab/P
 - Search by name, DOB, patient ID, phone
 - High-density patient table with pagination
 - Add/edit patient with PhilHealth fields
+- Allergy display and management (banner + detailed card)
 - Forward to triage (creates encounter with WAIT_TRIAGE status)
 
 ### B) Triage (TRIAGE role) ✅ Implemented
 - Queue: Today's patients with status=WAIT_TRIAGE
 - FIFO claiming system (one patient per nurse)
 - Vitals form: BP, HR, RR, Temp, SpO2, Weight, Height, chief complaint
+- Allergy management: Add/edit/remove allergies, confirm NKA status
 - Submit → status becomes TRIAGED
 
 ### C) Appointments (DOCTOR role) ⚠️ Route only
@@ -150,3 +154,9 @@ PhilHealth data captured in patient registration (not separate module):
 - Membership type, eligibility period, principal/dependent status
 - Stored with patient, displayed in detail view and encounters
 - No external API for MVP
+
+
+### RULES NON NEGOTIABLE
+- Do NOT build dashboards before scope logic exists. Multi-facility
+enforcement is mandatory from Day 1.
+
