@@ -6,6 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 CHO (City Health Office) System - A medical records and clinic management system for Philippine City Health Offices. Built with Next.js 16 App Router, Prisma 7, and PostgreSQL.
 
+## Current Implementation Status
+
+### Completed
+- **Auth** - Login/logout, JWT sessions, role-based guards
+- **Patients Module** - Search, create, edit, detail view, PhilHealth fields
+- **Triage Module** - Queue (FIFO), vitals capture, status workflow
+- **Database Schema** - 20+ models fully defined with soft deletes
+- **Reference Data** - 34 barangays, 10 diagnosis categories, 86 subcategories, 148 ICD-10 codes
+- **App Shell** - Layout, sidebar, navbar, responsive design
+
+### In Progress
+- **Appointments/Doctor Module** - Route exists, queue not implemented
+- **Diagnosis Entry** - Backend taxonomy ready, UI not started
+
+### Not Started
+- **Laboratory Module** - Queue, result upload, release workflow
+- **Pharmacy Module** - Dispense queue, inventory management
+- **Admin Features** - User CRUD, dashboard KPIs, reports
+
 ## Commands
 
 ```bash
@@ -22,10 +41,11 @@ npx prisma db push   # Push schema changes without migration (dev only)
 
 ### Folder Structure (Strict Separation)
 
-- **`actions/`** - Server actions organized by domain: auth/, patients/, encounters/, triage/, doctor/, lab/, pharmacy/, audit/
+- **`actions/`** - Server actions by domain: auth/, patients/, encounters/, triage/, doctor/
 - **`app/`** - Routes only (UI + navigation). No business logic.
-- **`lib/`** - Infrastructure: db/, auth/, validators/, constants/, utils/, storage/
-- **`components/`** - Reusable UI only. No DB logic. Subdirs: layout/, ui/, forms/, tables/
+- **`lib/`** - Infrastructure: db/, auth/, validators/, constants/, utils/
+- **`components/`** - Reusable UI only. No DB logic. Subdirs: layout/, ui/, forms/, tables/, triage/
+- **`hooks/`** - Custom React hooks
 
 ### Key Patterns
 
@@ -77,148 +97,56 @@ const session = await requireRoleForAction(["PHARMACY"])  // throws AuthError("F
 - Stock cannot go below zero; every change creates InventoryTxn
 - All audit logs include: userId, userName, action, entity, entityId, timestamp
 
+## Test Users (Seeded)
+
+8 users across roles/facilities. Password for all: `password123`
+- `admin` (ADMIN), `registration` (REGISTRATION), `triage` (TRIAGE)
+- `doctor` (DOCTOR), `lab` (LAB), `pharmacy` (PHARMACY)
+- Barangay staff: `brgy_anonas_reg`, `brgy_anonas_triage`
 
 
+## Module Requirements
 
-
-## Workflow
-
-Layout
-
-Page header: Patients
-
-Search bar (name, DOB, patient ID, phone)
-Table: patient list (high density)
-Action buttons:
-Add patient
-Edit patient
-
-View patient summary 
-
-On selecting a patient: show “forward to triage” panel/button
-
-Add Patient Form:if adding NEW patient
-Outputs
-
-Creates/updates patient record
-
-Forwards to TRIAGE (status = WAIT_TRIAGE)
-
-C) TRIAGE 
-
-Purpose: Search/select queued patient, capture vital signs, then forward to Appointments.
-
-Layout
-
-Left: Patient lists (Today / Status = WAIT_TRIAGE )
-
-Right:
-Main: Triage form (Vitals)
-BP, HR, RR, Temp, SpO2, Weight, Height
-Chief complaint (optional if you allow)
-Submit → status becomes TRIAGED → forwarded
-
-Hard rule enforced
-No “Add Patient” button here.
-
-Only select from Patients/status=WAIT_TRIAGE.
-
-D) APPOINTMENTS 
-
-Purpose: The logged-in doctor sees only assigned appointments.
-
-Layout
-
-Tabs:
-Today
-Upcoming
-Completed
-
-List/Table:
-Time
-Patient
-Status (WAIT_DOCTOR /  IN_CONSULT / For Lab / For Pharmacy / Done)
-
-Clicking appointment opens:
-
-Patient summary + triage vitals
-Diagnosis / notes
-Orders (Lab)
-Prescriptions
-Key permission
-
-Doctor cannot see other doctors’ appointments.
-
-E) LABORATORY
-
-Purpose: manage lab requests and upload results.
-
-Layout
-
-Tabs: Pending / In Progress / Released
-
-Order details page:
-
-Requested tests
-Upload result (file or structured results)
-Release action (status change)
-
-(If you keep MAIN-only lab rule: include “Requested Facility” vs “Performing Facility = MAIN”.)
-
-F) PHARMACY
-
-Purpose: dispense based on prescriptions, manage inventory in/out.
-
-Layout
-
-Queue: For dispense
-Prescription details:
-Items, quantity, instructions
-Dispense button → inventory OUT txn
-Inventory panel:
-Low stock alerts
-Adjustments
-
-G) USERS
-
-Purpose: manage staff accounts.
-
-Layout
-
-List users
-Add/edit user
-Assign role + scope + facility
-Reset password / deactivate
-
-5) Workflow Summary (Your Intended Path)
-
-Patients (validate or add new )
-→ Triage (vitals only)
-→ Appointments (doctor consult for assigned doctor only)
-→ optional Laboratory
-→ optional Pharmacy
-→ done
-
-H) Additional Features
-
-# PhilHealth Registration Integration Plan
-
-## Process (brief)
-
-PhilHealth registration in CHO is **captured at patient registration or when editing a patient** in the **Patients** module (no separate “PhilHealth module”). Flow:
-
-1. **Registration staff** searches or creates a patient in the Patients module.
-2. When creating or editing a patient, they optionally fill **PhilHealth** fields (beyond the existing PhilHealth number): membership type, eligibility period, and whether the patient is a principal or dependent.
-3. The system stores this with the patient and displays it on the **patient detail view** and in encounter context for future use (e.g. benefit eligibility, claims).
-4. No external PhilHealth API is assumed for MVP; data is **facility-stored only**. Optional later: PIN format checks, and if PhilHealth provides an API, MDR verification or eligibility check.
-
+### Patient Flow
 ```
-Patients (create/search) → Triage (vitals) → Appointments (doctor consult) → Lab/Pharmacy → Done
+Patients (create/search) → Triage (vitals) → Appointments (doctor) → Lab/Pharmacy → Done
 ```
 
-Each module has role restrictions:
-- REGISTRATION: Patients module
-- TRIAGE: Triage queue, vitals capture
-- DOCTOR: Appointments, diagnosis, prescriptions, lab orders
-- LAB: Lab results upload/release
-- PHARMACY: Dispensing, inventory
+### A) Patients (REGISTRATION role) ✅ Implemented
+- Search by name, DOB, patient ID, phone
+- High-density patient table with pagination
+- Add/edit patient with PhilHealth fields
+- Forward to triage (creates encounter with WAIT_TRIAGE status)
+
+### B) Triage (TRIAGE role) ✅ Implemented
+- Queue: Today's patients with status=WAIT_TRIAGE
+- FIFO claiming system (one patient per nurse)
+- Vitals form: BP, HR, RR, Temp, SpO2, Weight, Height, chief complaint
+- Submit → status becomes TRIAGED
+
+### C) Appointments (DOCTOR role) ⚠️ Route only
+- Tabs: Today / Upcoming / Completed
+- Doctor sees only their assigned appointments
+- Consultation view: patient summary, triage vitals, diagnosis, orders, prescriptions
+- Statuses: WAIT_DOCTOR → IN_CONSULT → FOR_LAB/FOR_PHARMACY → DONE
+- Make UI simple but has ALL the information needed in examining a Patient.
+
+### D) Laboratory (LAB role) ❌ Not started
+- Tabs: Pending / In Progress / Released
+- View requested tests, upload results, release action
+- Main facility only performs lab work
+
+### E) Pharmacy (PHARMACY role) ❌ Not started
+- Queue: prescriptions for dispense
+- Dispense button → inventory OUT transaction
+- Inventory panel: low stock alerts, adjustments
+
+### F) Users (ADMIN role) ⚠️ Route only
+- List users, add/edit, assign role + facility
+- Reset password / deactivate
+
+### PhilHealth Integration
+PhilHealth data captured in patient registration (not separate module):
+- Membership type, eligibility period, principal/dependent status
+- Stored with patient, displayed in detail view and encounters
+- No external API for MVP
