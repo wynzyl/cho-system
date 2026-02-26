@@ -1,6 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
+import { logAudit } from "@/lib/db/audit"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { createPatientSchema, type CreatePatientInput } from "@/lib/validators/patient"
 import { generatePatientCode } from "@/lib/utils/patient-code"
@@ -50,15 +51,13 @@ export async function createPatientAction(
       },
     })
 
-    await tx.auditLog.create({
-      data: {
-        userId: session.userId,
-        userName: session.name,
-        action: "CREATE",
-        entity: "Patient",
-        entityId: newPatient.id,
-        metadata: { patientCode: newPatient.patientCode },
-      },
+    await logAudit(tx, {
+      userId: session.userId,
+      userName: session.name,
+      action: "CREATE",
+      entity: "Patient",
+      entityId: newPatient.id,
+      metadata: { patientCode: newPatient.patientCode },
     })
 
     return newPatient

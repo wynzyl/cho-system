@@ -1,6 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
+import { logAudit } from "@/lib/db/audit"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { confirmNkaSchema, type ConfirmNkaInput } from "@/lib/validators/patient"
 import { validateInput } from "@/lib/utils"
@@ -58,18 +59,16 @@ export async function confirmNkaAction(
     })
 
     // Create audit log
-    await tx.auditLog.create({
-      data: {
-        userId: session.userId,
-        userName: session.name,
-        action: "UPDATE",
-        entity: "Patient",
-        entityId: data.patientId,
-        metadata: {
-          field: "allergyStatus",
-          oldValue: patient.allergyStatus,
-          newValue: "NKA",
-        },
+    await logAudit(tx, {
+      userId: session.userId,
+      userName: session.name,
+      action: "UPDATE",
+      entity: "Patient",
+      entityId: data.patientId,
+      metadata: {
+        field: "allergyStatus",
+        oldValue: patient.allergyStatus,
+        newValue: "NKA",
       },
     })
 

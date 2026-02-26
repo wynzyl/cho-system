@@ -1,6 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
+import { logAudit } from "@/lib/db/audit"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { updatePatientSchema, type UpdatePatientInput } from "@/lib/validators/patient"
 import { validateInput, emptyToNull } from "@/lib/utils"
@@ -71,15 +72,13 @@ export async function updatePatientAction(
       },
     })
 
-    await tx.auditLog.create({
-      data: {
-        userId: session.userId,
-        userName: session.name,
-        action: "UPDATE",
-        entity: "Patient",
-        entityId: patient.id,
-        metadata: { patientCode: patient.patientCode },
-      },
+    await logAudit(tx, {
+      userId: session.userId,
+      userName: session.name,
+      action: "UPDATE",
+      entity: "Patient",
+      entityId: patient.id,
+      metadata: { patientCode: patient.patientCode },
     })
 
     return { found: true as const, patient }

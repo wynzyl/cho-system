@@ -1,6 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
+import { logAudit } from "@/lib/db/audit"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { addAllergySchema, type AddAllergyInput } from "@/lib/validators/patient"
 import { validateInput, emptyToNull } from "@/lib/utils"
@@ -57,18 +58,16 @@ export async function addAllergyAction(
     })
 
     // Create audit log
-    await tx.auditLog.create({
-      data: {
-        userId: session.userId,
-        userName: session.name,
-        action: "CREATE",
-        entity: "PatientAllergy",
-        entityId: newAllergy.id,
-        metadata: {
-          patientId: data.patientId,
-          allergen: data.allergen,
-          severity: data.severity,
-        },
+    await logAudit(tx, {
+      userId: session.userId,
+      userName: session.name,
+      action: "CREATE",
+      entity: "PatientAllergy",
+      entityId: newAllergy.id,
+      metadata: {
+        patientId: data.patientId,
+        allergen: data.allergen,
+        severity: data.severity,
       },
     })
 
