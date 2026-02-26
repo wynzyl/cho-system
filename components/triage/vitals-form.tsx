@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -10,8 +10,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AllergyBanner } from "@/components/allergy"
+import { AllergyBanner, AllergyCard } from "@/components/allergy"
 import { submitTriageAction, type TriageQueueItem } from "@/actions/triage"
+import { getPatientAction, type PatientWithEncounters } from "@/actions/patients"
 
 const vitalsFormSchema = z.object({
   bpSystolic: z
@@ -82,10 +83,20 @@ type VitalsFormData = z.infer<typeof vitalsFormSchema>
 interface VitalsFormProps {
   selectedEncounter: TriageQueueItem | null
   onSuccess: () => void
+  canEditAllergies?: boolean
+  refreshKey?: number
+  onAllergyUpdate?: () => void
 }
 
-export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
+export function VitalsForm({
+  selectedEncounter,
+  onSuccess,
+  canEditAllergies = false,
+  refreshKey = 0,
+  onAllergyUpdate,
+}: VitalsFormProps) {
   const [isPending, startTransition] = useTransition()
+  const [patient, setPatient] = useState<PatientWithEncounters | null>(null)
 
   const form = useForm<VitalsFormData>({
     resolver: zodResolver(vitalsFormSchema),
@@ -121,6 +132,23 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
       triageNotes: "",
     })
   }, [selectedEncounter?.id, form])
+
+  // Fetch full patient when selected for allergy management (re-fetches when refreshKey changes after allergy update)
+  useEffect(() => {
+    if (!selectedEncounter?.patientId || !canEditAllergies) {
+      setPatient(null)
+      return
+    }
+    let cancelled = false
+    getPatientAction(selectedEncounter.patientId).then((result) => {
+      if (cancelled) return
+      if (result.ok) setPatient(result.data)
+      else setPatient(null)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [selectedEncounter?.patientId, canEditAllergies, refreshKey])
 
   const onSubmit = (data: VitalsFormData) => {
     if (!selectedEncounter) return
@@ -188,6 +216,21 @@ export function VitalsForm({ selectedEncounter, onSuccess }: VitalsFormProps) {
         )}
       </CardHeader>
       <CardContent>
+        {/* Allergy management section - when TRIAGE has edit access */}
+        {selectedEncounter && canEditAllergies && patient && (
+          <div className="mb-6">
+            <AllergyCard
+              patientId={patient.id}
+              allergyStatus={patient.allergyStatus ?? "UNKNOWN"}
+              allergies={patient.allergies ?? []}
+              allergyConfirmedAt={patient.allergyConfirmedAt}
+              allergyConfirmedBy={patient.allergyConfirmedBy}
+              canEdit={true}
+              onUpdate={onAllergyUpdate}
+            />
+          </div>
+        )}
+
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* Blood Pressure */}
           <div className="space-y-2">
