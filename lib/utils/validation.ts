@@ -1,8 +1,6 @@
 import { ZodSchema, ZodError } from "zod"
 import type { ActionResult } from "@/lib/auth/types"
-import type { ErrorOrigin } from "./error-origin"
-
-const isDev = process.env.NODE_ENV !== "production"
+import { isDev, type ErrorOrigin } from "./error-origin"
 
 /**
  * Parse Zod validation errors into a field-error map

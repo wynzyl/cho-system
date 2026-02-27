@@ -234,6 +234,9 @@ model User {
   allergiesRecordedBy       PatientAllergy[] @relation("AllergyRecordedBy")
   allergiesDeletedBy        PatientAllergy[] @relation("AllergyDeletedBy")
 
+  // Medical history update relation
+  patientMedicalHistoryUpdatedBy Patient[] @relation("PatientMedicalHistoryUpdatedBy")
+
   @@index([role])
   @@index([isActive])
   @@index([facilityId])
@@ -287,10 +290,27 @@ model Patient {
   notes String?
 
   // Allergy tracking
-  allergyStatus       PatientAllergyStatus @default(UNKNOWN)
-  allergyConfirmedAt  DateTime?
+  allergyStatus        PatientAllergyStatus @default(UNKNOWN)
+  allergyConfirmedAt   DateTime?
   allergyConfirmedById String?
-  allergyConfirmedBy  User?    @relation("PatientAllergyConfirmedBy", fields: [allergyConfirmedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+  allergyConfirmedBy   User?                @relation("PatientAllergyConfirmedBy", fields: [allergyConfirmedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
+
+  // Lifestyle (triage confirms each visit)
+  isSmoker         Boolean?
+  smokingPackYears Int?
+  isAlcohol        Boolean?
+  pregnancyStatus  String?  // "not_applicable"|"not_pregnant"|"pregnant"|"postpartum"
+  pregnancyWeeks   Int?
+
+  // Medical Background (JSON for flexibility)
+  medicalHistoryData Json? // {conditions[], surgeries[], currentMedications[], immunizations[]}
+  familyHistoryData  Json? // {diabetes, hypertension, cancer, heartDisease, stroke}
+  socialHistoryData  Json? // {exposureHistory[], other}
+
+  // Audit trail for medical history
+  medicalHistoryUpdatedAt   DateTime?
+  medicalHistoryUpdatedById String?
+  medicalHistoryUpdatedBy   User?     @relation("PatientMedicalHistoryUpdatedBy", fields: [medicalHistoryUpdatedById], references: [id], onDelete: NoAction, onUpdate: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -343,6 +363,27 @@ model Encounter {
   claimedAt   DateTime?
   claimedBy   User?     @relation("ClaimedEncounters", fields: [claimedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
+  // Consultation workflow
+  consultStartedAt DateTime?
+  consultEndedAt   DateTime?
+
+  // Doctor's HPI refinement (extends triage screening)
+  // Schema: { character?, location?, radiation?, aggravating?, relieving?, additionalNotes? }
+  hpiDoctorNotes Json?
+
+  // Physical Examination (doctor only)
+  // Schema: { general, heent, chest, cardiovascular, abdomen, skin, extremities, neurologic }
+  physicalExamData Json?
+
+  // Clinical Assessment
+  clinicalImpression String? @db.Text
+
+  // Procedures performed
+  proceduresData Json? // [{procedure, notes}]
+
+  // Advice and follow-up
+  adviceData Json? // {instructions[], followUpDate, followUpNotes}
+
   triageRecord  TriageRecord?
   diagnoses     Diagnosis[]
   prescriptions Prescription[]
@@ -361,6 +402,7 @@ model Encounter {
   @@index([facilityId])
   @@index([facilityId, occurredAt])
   @@index([patientId, occurredAt])
+  @@index([doctorId, status])
 
   // Partial unique index: only one WAIT_TRIAGE encounter per patient
   // Created via raw SQL in migration (Prisma doesn't support partial unique natively)
@@ -384,6 +426,16 @@ model TriageRecord {
   heightCm        Decimal? @db.Decimal(6, 2)
 
   notes String?
+
+  // HPI Screening (triage captures basic elements)
+  symptomOnset       String?  // "2 days ago", "This morning"
+  symptomDuration    String?  // "3 days", "1 week"
+  painSeverity       Int?     // 1-10 scale (if applicable)
+  associatedSymptoms String[] // ["fever", "vomiting", "headache"]
+
+  // Exposure Screening (CHO-specific alerts)
+  exposureFlags String[] // ["animal_bite", "flood_exposure", "tb_contact"]
+  exposureNotes String?
 
   recordedAt   DateTime @default(now())
   recordedById String?

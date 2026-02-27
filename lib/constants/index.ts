@@ -53,3 +53,41 @@ export type {
 // Error constants
 export { ERROR_CODES, ERROR_MESSAGES } from "./errors"
 export type { ErrorCode } from "./errors"
+
+// Consultation constants (HPI, PE, procedures, etc.)
+export {
+  ASSOCIATED_SYMPTOMS,
+  SYMPTOM_ONSET_OPTIONS,
+  SYMPTOM_DURATION_OPTIONS,
+  EXPOSURE_FLAGS,
+  getExposureAlert,
+  getExposureColor,
+  PREGNANCY_STATUS_OPTIONS,
+  SMOKING_STATUS_OPTIONS,
+  ALCOHOL_STATUS_OPTIONS,
+  CHRONIC_CONDITIONS,
+  BODY_SYSTEMS,
+  PE_FINDINGS,
+  PAIN_CHARACTER_OPTIONS,
+  BODY_LOCATIONS,
+  AGGRAVATING_FACTORS,
+  RELIEVING_FACTORS,
+  COMMON_PROCEDURES,
+  getProceduresByCategory,
+  COMMON_ADVICE,
+  FAMILY_HISTORY_ITEMS,
+  FAMILY_RELATIONS,
+  COMMON_LAB_TESTS,
+  getLabTestsByCategory,
+} from "./consultation"
+export type {
+  AssociatedSymptomValue,
+  SymptomOnsetValue,
+  SymptomDurationValue,
+  ExposureFlagValue,
+  PregnancyStatusValue,
+  BodySystemValue,
+  CommonProcedureValue,
+  CommonAdviceValue,
+  CommonLabTestValue,
+} from "./consultation"

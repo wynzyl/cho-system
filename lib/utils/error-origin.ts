@@ -12,7 +12,7 @@ export interface ErrorOrigin {
   context?: string // optional context like "validation", "db-lookup"
 }
 
-const isDev = process.env.NODE_ENV !== "production"
+export const isDev = process.env.NODE_ENV !== "production"
 
 /**
  * Create an ErrorOrigin object for a server action

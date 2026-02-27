@@ -132,9 +132,7 @@ Neurologic
 Each section:
 
 Normal
-
 Abnormal (with short note)
-
 Keep it semi-structured.
 
 9️⃣ Assessment / Diagnosis

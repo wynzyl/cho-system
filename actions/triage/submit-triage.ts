@@ -43,11 +43,12 @@ export async function submitTriageAction(
   }
 
   const result = await db.$transaction(async (tx) => {
-    // Create or update TriageRecord with vitals (upsert handles reused encounters)
+    // Create or update TriageRecord with vitals + HPI screening + exposure (upsert handles reused encounters)
     const triageRecord = await tx.triageRecord.upsert({
       where: { encounterId: data.encounterId },
       create: {
         encounterId: data.encounterId,
+        // Vitals
         bpSystolic: data.bpSystolic ?? null,
         bpDiastolic: data.bpDiastolic ?? null,
         heartRate: data.heartRate ?? null,
@@ -57,9 +58,18 @@ export async function submitTriageAction(
         weightKg: data.weightKg ?? null,
         heightCm: data.heightCm ?? null,
         notes: data.triageNotes ?? null,
+        // HPI Screening
+        symptomOnset: data.symptomOnset ?? null,
+        symptomDuration: data.symptomDuration ?? null,
+        painSeverity: data.painSeverity ?? null,
+        associatedSymptoms: data.associatedSymptoms ?? [],
+        // Exposure Screening
+        exposureFlags: data.exposureFlags ?? [],
+        exposureNotes: data.exposureNotes ?? null,
         recordedById: session.userId,
       },
       update: {
+        // Vitals
         bpSystolic: data.bpSystolic ?? null,
         bpDiastolic: data.bpDiastolic ?? null,
         heartRate: data.heartRate ?? null,
@@ -69,6 +79,14 @@ export async function submitTriageAction(
         weightKg: data.weightKg ?? null,
         heightCm: data.heightCm ?? null,
         notes: data.triageNotes ?? null,
+        // HPI Screening
+        symptomOnset: data.symptomOnset ?? null,
+        symptomDuration: data.symptomDuration ?? null,
+        painSeverity: data.painSeverity ?? null,
+        associatedSymptoms: data.associatedSymptoms ?? [],
+        // Exposure Screening
+        exposureFlags: data.exposureFlags ?? [],
+        exposureNotes: data.exposureNotes ?? null,
         recordedById: session.userId,
         recordedAt: new Date(),
       },
