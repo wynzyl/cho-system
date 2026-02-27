@@ -53,3 +53,27 @@ export type {
 // Error constants
 export { ERROR_CODES, ERROR_MESSAGES } from "./errors"
 export type { ErrorCode } from "./errors"
+
+// Consultation constants
+export {
+  ASSOCIATED_SYMPTOMS,
+  SYMPTOM_ONSET_OPTIONS,
+  SYMPTOM_DURATION_OPTIONS,
+  EXPOSURE_FLAGS,
+  getExposureAlert,
+  getExposureColor,
+  PREGNANCY_STATUS_OPTIONS,
+  BODY_SYSTEMS,
+  PE_FINDINGS,
+  COMMON_PROCEDURES,
+  COMMON_ADVICE,
+  COMMON_LAB_TESTS,
+  PAIN_CHARACTER_OPTIONS,
+} from "./consultation"
+export type {
+  AssociatedSymptomValue,
+  ExposureFlagValue,
+  PregnancyStatusValue,
+  BodySystemValue,
+  ProcedureValue,
+} from "./consultation"
