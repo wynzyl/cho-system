@@ -159,4 +159,5 @@ PhilHealth data captured in patient registration (not separate module):
 ### Rules (Non-negotiable)
 - Do NOT build dashboards before scope logic exists. Multi-facility
 enforcement is mandatory from Day 1.
+- Always create a TODO list before implementing any features.
 

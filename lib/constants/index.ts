@@ -49,3 +49,7 @@ export type {
   DiagnosisSubcategorySeed,
   IcdMappingSeed,
 } from "./diagnosis-taxonomy"
+
+// Error constants
+export { ERROR_CODES, ERROR_MESSAGES } from "./errors"
+export type { ErrorCode } from "./errors"
