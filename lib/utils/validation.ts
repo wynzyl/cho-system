@@ -1,5 +1,8 @@
 import { ZodSchema, ZodError } from "zod"
 import type { ActionResult } from "@/lib/auth/types"
+import type { ErrorOrigin } from "./error-origin"
+
+const isDev = process.env.NODE_ENV !== "production"
 
 /**
  * Parse Zod validation errors into a field-error map
@@ -19,14 +22,16 @@ export function parseZodErrors(error: ZodError): Record<string, string[]> {
  *
  * Usage:
  * ```typescript
- * const validation = validateInput(createPatientSchema, input)
+ * const origin = createOrigin("actions/patients/create-patient.ts", "createPatientAction")
+ * const validation = validateInput(createPatientSchema, input, origin)
  * if (!validation.ok) return validation.result
  * const data = validation.data
  * ```
  */
 export function validateInput<T>(
   schema: ZodSchema<T>,
-  input: unknown
+  input: unknown,
+  origin?: ErrorOrigin
 ): { ok: true; data: T } | { ok: false; result: ActionResult<never> } {
   const parsed = schema.safeParse(input)
   if (!parsed.success) {
@@ -38,6 +43,7 @@ export function validateInput<T>(
           code: "VALIDATION_ERROR",
           message: "Invalid input",
           fieldErrors: parseZodErrors(parsed.error),
+          ...(isDev && origin && { _origin: { ...origin, context: "validation" } }),
         },
       },
     }
