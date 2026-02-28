@@ -289,3 +289,74 @@ export const PAIN_CHARACTER_OPTIONS = [
   { value: "aching", label: "Aching" },
   { value: "pressure", label: "Pressure" },
 ] as const
+
+// =============================================================================
+// COMMON MEDICAL CONDITIONS (CHO-relevant for quick selection)
+// =============================================================================
+
+export const COMMON_MEDICAL_CONDITIONS = [
+  { code: "hypertension", name: "Hypertension" },
+  { code: "diabetes_type2", name: "Diabetes Mellitus Type 2" },
+  { code: "diabetes_type1", name: "Diabetes Mellitus Type 1" },
+  { code: "asthma", name: "Bronchial Asthma" },
+  { code: "copd", name: "COPD" },
+  { code: "tb", name: "Tuberculosis" },
+  { code: "heart_disease", name: "Heart Disease" },
+  { code: "stroke", name: "Stroke/CVA" },
+  { code: "kidney_disease", name: "Kidney Disease" },
+  { code: "thyroid", name: "Thyroid Disorder" },
+  { code: "arthritis", name: "Arthritis" },
+  { code: "gerd", name: "GERD/Acid Reflux" },
+  { code: "ulcer", name: "Peptic Ulcer" },
+  { code: "anemia", name: "Anemia" },
+  { code: "epilepsy", name: "Epilepsy/Seizure Disorder" },
+  { code: "mental_health", name: "Mental Health Condition" },
+] as const
+
+export type MedicalConditionCode = (typeof COMMON_MEDICAL_CONDITIONS)[number]["code"]
+
+// =============================================================================
+// FAMILY HISTORY CONDITIONS
+// =============================================================================
+
+export const FAMILY_HISTORY_CONDITIONS = [
+  { key: "diabetes", label: "Diabetes" },
+  { key: "hypertension", label: "Hypertension" },
+  { key: "cancer", label: "Cancer" },
+  { key: "heartDisease", label: "Heart Disease" },
+  { key: "stroke", label: "Stroke" },
+  { key: "asthma", label: "Asthma" },
+  { key: "mentalHealth", label: "Mental Health" },
+] as const
+
+export type FamilyHistoryKey = (typeof FAMILY_HISTORY_CONDITIONS)[number]["key"]
+
+// =============================================================================
+// FAMILY RELATION OPTIONS
+// =============================================================================
+
+export const FAMILY_RELATION_OPTIONS = [
+  { value: "mother", label: "Mother" },
+  { value: "father", label: "Father" },
+  { value: "sibling", label: "Sibling" },
+  { value: "grandparent", label: "Grandparent" },
+  { value: "multiple", label: "Multiple Relatives" },
+] as const
+
+// =============================================================================
+// COMMON IMMUNIZATIONS (CHO-relevant)
+// =============================================================================
+
+export const COMMON_IMMUNIZATIONS = [
+  { code: "bcg", name: "BCG" },
+  { code: "hepa_b", name: "Hepatitis B" },
+  { code: "opv", name: "OPV/IPV (Polio)" },
+  { code: "dpt", name: "DPT/Pentavalent" },
+  { code: "measles", name: "Measles" },
+  { code: "mmr", name: "MMR" },
+  { code: "flu", name: "Influenza" },
+  { code: "pneumonia", name: "Pneumococcal" },
+  { code: "tetanus", name: "Tetanus Toxoid" },
+  { code: "covid", name: "COVID-19" },
+  { code: "hpv", name: "HPV" },
+] as const

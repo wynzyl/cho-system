@@ -5,6 +5,7 @@ import { z } from "zod"
  * Uses strings for form inputs (converted to numbers on submit)
  */
 export const vitalsFormSchema = z.object({
+  // Vital Signs
   bpSystolic: z
     .string()
     .min(1, "Systolic BP is required")
@@ -61,11 +62,23 @@ export const vitalsFormSchema = z.object({
       const num = parseFloat(val)
       return !isNaN(num) && num >= 20 && num <= 300
     }, "Must be between 20-300 cm"),
+
+  // Chief Complaint & Notes
   chiefComplaint: z
     .string()
     .min(1, "Chief complaint is required")
     .max(500, "Maximum 500 characters"),
   triageNotes: z.string().max(2000, "Maximum 2000 characters").optional(),
+
+  // HPI Screening
+  symptomOnset: z.string().optional(),
+  symptomDuration: z.string().optional(),
+  painSeverity: z.number().int().min(0).max(10).optional(),
+  associatedSymptoms: z.array(z.string()).optional(),
+
+  // Exposure Screening (CHO-specific)
+  exposureFlags: z.array(z.string()).optional(),
+  exposureNotes: z.string().max(1000, "Maximum 1000 characters").optional(),
 })
 
 export type VitalsFormData = z.infer<typeof vitalsFormSchema>
