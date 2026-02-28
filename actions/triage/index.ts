@@ -1,5 +1,6 @@
 export { getTriageQueueAction, type TriageQueueItem, type PatientAllergyInfo } from "./get-triage-queue"
 export { submitTriageAction } from "./submit-triage"
+export { updatePatientBackgroundAction } from "./update-patient-background"
 export {
   createEncounterForPatientAction,
   type CreateEncounterResponse,

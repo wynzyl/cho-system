@@ -33,7 +33,7 @@ export async function createEncounterAction(
 
   // RULES:
   // 1. If WAIT_TRIAGE exists, reuse it (update occurredAt to now)
-  // 2. If FOR_LAB exists, mark as TRIAGED (follow-up visit)
+  // 2. If FOR_LAB exists, mark as WAIT_DOCTOR (follow-up visit)
   // 3. If any other active encounter exists, block creation
   try {
     const result = await db.$transaction(async (tx) => {
@@ -79,7 +79,7 @@ export async function createEncounterAction(
         return updated
       }
 
-      // Check for FOR_LAB - mark as TRIAGED (follow-up visit)
+      // Check for FOR_LAB - mark as WAIT_DOCTOR (follow-up visit)
       const existingForLab = await tx.encounter.findFirst({
         where: {
           patientId,
@@ -93,7 +93,7 @@ export async function createEncounterAction(
         const updated = await tx.encounter.update({
           where: { id: existingForLab.id },
           data: {
-            status: "TRIAGED",
+            status: "WAIT_DOCTOR",
           },
         })
 
@@ -109,7 +109,7 @@ export async function createEncounterAction(
               patientCode: patient.patientCode,
               rule: "FOR_LAB_FOLLOWUP",
               previousStatus: "FOR_LAB",
-              newStatus: "TRIAGED",
+              newStatus: "WAIT_DOCTOR",
             },
           },
         })

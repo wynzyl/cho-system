@@ -43,7 +43,7 @@ export async function submitTriageAction(
   }
 
   const result = await db.$transaction(async (tx) => {
-    // Create or update TriageRecord with vitals (upsert handles reused encounters)
+    // Create or update TriageRecord with vitals and HPI screening (upsert handles reused encounters)
     const triageRecord = await tx.triageRecord.upsert({
       where: { encounterId: data.encounterId },
       create: {
@@ -57,6 +57,14 @@ export async function submitTriageAction(
         weightKg: data.weightKg ?? null,
         heightCm: data.heightCm ?? null,
         notes: data.triageNotes ?? null,
+        // HPI Screening
+        symptomOnset: data.symptomOnset ?? null,
+        symptomDuration: data.symptomDuration ?? null,
+        painSeverity: data.painSeverity ?? null,
+        associatedSymptoms: data.associatedSymptoms ?? [],
+        // Exposure Screening
+        exposureFlags: data.exposureFlags ?? [],
+        exposureNotes: data.exposureNotes ?? null,
         recordedById: session.userId,
       },
       update: {
@@ -69,16 +77,24 @@ export async function submitTriageAction(
         weightKg: data.weightKg ?? null,
         heightCm: data.heightCm ?? null,
         notes: data.triageNotes ?? null,
+        // HPI Screening
+        symptomOnset: data.symptomOnset ?? null,
+        symptomDuration: data.symptomDuration ?? null,
+        painSeverity: data.painSeverity ?? null,
+        associatedSymptoms: data.associatedSymptoms ?? [],
+        // Exposure Screening
+        exposureFlags: data.exposureFlags ?? [],
+        exposureNotes: data.exposureNotes ?? null,
         recordedById: session.userId,
         recordedAt: new Date(),
       },
     })
 
-    // Update Encounter status to TRIAGED
+    // Update Encounter status to WAIT_DOCTOR (ready for doctor consultation)
     await tx.encounter.update({
       where: { id: data.encounterId },
       data: {
-        status: "TRIAGED",
+        status: "WAIT_DOCTOR",
         triageById: session.userId,
         chiefComplaint: data.chiefComplaint ?? encounter.chiefComplaint,
         triageNotes: data.triageNotes ?? null,
@@ -98,7 +114,7 @@ export async function submitTriageAction(
           patientCode: encounter.patient.patientCode,
           triageRecordId: triageRecord.id,
           previousStatus: "WAIT_TRIAGE",
-          newStatus: "TRIAGED",
+          newStatus: "WAIT_DOCTOR",
         },
       },
     })
