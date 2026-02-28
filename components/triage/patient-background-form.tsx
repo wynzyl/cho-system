@@ -10,7 +10,6 @@ import {
   Pill,
   Syringe,
   Scissors,
-  Plus,
   X,
   Loader2,
   Save,
@@ -28,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { BackgroundSection, YesNoToggle, AddItemInput } from "@/components/forms"
 import { updatePatientBackgroundAction } from "@/actions/triage"
 import {
   COMMON_MEDICAL_CONDITIONS,
@@ -41,38 +41,26 @@ import { cn } from "@/lib/utils"
 interface MedicalCondition {
   code: string
   name: string
-  diagnosedYear?: number | null
-  isControlled?: boolean | null
-  notes?: string | null
 }
 
 interface Surgery {
   name: string
-  year?: number | null
-  notes?: string | null
 }
 
 interface Medication {
   name: string
-  dosage?: string | null
-  frequency?: string | null
-  purpose?: string | null
 }
 
 interface Immunization {
   name: string
-  date?: string | null
-  notes?: string | null
 }
 
 interface FamilyHistoryItem {
   present: boolean
   relation?: string | null
-  notes?: string | null
 }
 
 interface MedicalHistoryData {
-  version?: number
   conditions?: MedicalCondition[]
   surgeries?: Surgery[]
   currentMedications?: Medication[]
@@ -80,7 +68,6 @@ interface MedicalHistoryData {
 }
 
 interface FamilyHistoryData {
-  version?: number
   diabetes?: FamilyHistoryItem | null
   hypertension?: FamilyHistoryItem | null
   cancer?: FamilyHistoryItem | null
@@ -106,6 +93,36 @@ interface PatientBackgroundFormProps {
   disabled?: boolean
 }
 
+// Reusable item list with remove buttons
+function ItemList({
+  items,
+  onRemove,
+  disabled,
+}: {
+  items: { name: string }[]
+  onRemove: (index: number) => void
+  disabled: boolean
+}) {
+  if (items.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item, index) => (
+        <Badge key={index} variant="secondary" className="gap-1 pr-1">
+          {item.name}
+          <button
+            type="button"
+            onClick={() => onRemove(index)}
+            disabled={disabled}
+            className="ml-1 hover:bg-muted rounded-full p-0.5"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </Badge>
+      ))}
+    </div>
+  )
+}
+
 export function PatientBackgroundForm({
   patientId,
   patientSex,
@@ -117,16 +134,12 @@ export function PatientBackgroundForm({
   const [error, setError] = useState<string | null>(null)
   const saveSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Clear timeout on unmount
   useEffect(() => {
     return () => {
-      if (saveSuccessTimeoutRef.current) {
-        clearTimeout(saveSuccessTimeoutRef.current)
-      }
+      if (saveSuccessTimeoutRef.current) clearTimeout(saveSuccessTimeoutRef.current)
     }
   }, [])
 
-  // Parse initial data
   const medicalData = useMemo(
     () => (initialData.medicalHistoryData as MedicalHistoryData) || {},
     [initialData.medicalHistoryData]
@@ -149,31 +162,20 @@ export function PatientBackgroundForm({
     return initial
   }, [familyData])
 
-  // Lifestyle state
+  // State
   const [isSmoker, setIsSmoker] = useState<boolean | null>(initialData.isSmoker)
-  const [smokingPackYears, setSmokingPackYears] = useState<number | null>(
-    initialData.smokingPackYears
-  )
+  const [smokingPackYears, setSmokingPackYears] = useState<number | null>(initialData.smokingPackYears)
   const [isAlcohol, setIsAlcohol] = useState<boolean | null>(initialData.isAlcohol)
   const [pregnancyStatus, setPregnancyStatus] = useState<string | null>(initialData.pregnancyStatus)
   const [pregnancyWeeks, setPregnancyWeeks] = useState<number | null>(initialData.pregnancyWeeks)
-
-  // Medical history state
   const [conditions, setConditions] = useState<MedicalCondition[]>(medicalData.conditions || [])
   const [surgeries, setSurgeries] = useState<Surgery[]>(medicalData.surgeries || [])
   const [medications, setMedications] = useState<Medication[]>(medicalData.currentMedications || [])
-  const [immunizations, setImmunizations] = useState<Immunization[]>(
-    medicalData.immunizations || []
-  )
-
-  // Family history state
-  const [familyHistory, setFamilyHistory] =
-    useState<Record<string, FamilyHistoryItem>>(initialFamilyHistory)
+  const [immunizations, setImmunizations] = useState<Immunization[]>(medicalData.immunizations || [])
+  const [familyHistory, setFamilyHistory] = useState<Record<string, FamilyHistoryItem>>(initialFamilyHistory)
   const [familyOther, setFamilyOther] = useState<string>(familyData.other || "")
 
-  // New item inputs
-  const [newMedication, setNewMedication] = useState("")
-  const [newSurgery, setNewSurgery] = useState("")
+  const isDisabled = disabled || isPending
 
   const handleSave = () => {
     setError(null)
@@ -194,19 +196,12 @@ export function PatientBackgroundForm({
           currentMedications: medications,
           immunizations,
         },
-        familyHistoryData: {
-          version: 1,
-          ...familyHistory,
-          other: familyOther || null,
-        },
+        familyHistoryData: { version: 1, ...familyHistory, other: familyOther || null },
       })
 
       if (result.ok) {
         setSaveSuccess(true)
-        // Clear any existing timeout before setting new one
-        if (saveSuccessTimeoutRef.current) {
-          clearTimeout(saveSuccessTimeoutRef.current)
-        }
+        if (saveSuccessTimeoutRef.current) clearTimeout(saveSuccessTimeoutRef.current)
         saveSuccessTimeoutRef.current = setTimeout(() => setSaveSuccess(false), 3000)
       } else {
         setError(result.error.message)
@@ -215,63 +210,29 @@ export function PatientBackgroundForm({
   }
 
   const toggleCondition = (code: string, name: string) => {
-    setConditions((prev) => {
-      const exists = prev.find((c) => c.code === code)
-      if (exists) {
-        return prev.filter((c) => c.code !== code)
-      }
-      return [...prev, { code, name }]
-    })
-  }
-
-  const addMedication = () => {
-    if (!newMedication.trim()) return
-    setMedications((prev) => [...prev, { name: newMedication.trim() }])
-    setNewMedication("")
-  }
-
-  const removeMedication = (index: number) => {
-    setMedications((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  const addSurgery = () => {
-    if (!newSurgery.trim()) return
-    setSurgeries((prev) => [...prev, { name: newSurgery.trim() }])
-    setNewSurgery("")
-  }
-
-  const removeSurgery = (index: number) => {
-    setSurgeries((prev) => prev.filter((_, i) => i !== index))
+    setConditions((prev) =>
+      prev.some((c) => c.code === code)
+        ? prev.filter((c) => c.code !== code)
+        : [...prev, { code, name }]
+    )
   }
 
   const toggleImmunization = (code: string) => {
-    setImmunizations((prev) => {
-      const exists = prev.find((i) => i.name === code)
-      if (exists) {
-        return prev.filter((i) => i.name !== code)
-      }
-      return [...prev, { name: code }]
-    })
+    setImmunizations((prev) =>
+      prev.some((i) => i.name === code)
+        ? prev.filter((i) => i.name !== code)
+        : [...prev, { name: code }]
+    )
   }
 
   const updateFamilyHistory = (key: string, updates: Partial<FamilyHistoryItem>) => {
-    setFamilyHistory((prev) => ({
-      ...prev,
-      [key]: { ...prev[key], ...updates },
-    }))
+    setFamilyHistory((prev) => ({ ...prev, [key]: { ...prev[key], ...updates } }))
   }
-
-  const isDisabled = disabled || isPending
 
   return (
     <div className="space-y-6">
-      {/* Lifestyle Section */}
-      <div className="space-y-4">
-        <h3 className="font-medium text-sm flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
-          <Heart className="h-4 w-4" />
-          Lifestyle
-        </h3>
-
+      {/* Lifestyle */}
+      <BackgroundSection icon={Heart} title="Lifestyle">
         <div className="grid gap-4">
           {/* Smoking */}
           <div className="flex items-start gap-4 p-3 rounded-lg bg-muted/30">
@@ -279,26 +240,7 @@ export function PatientBackgroundForm({
             <div className="flex-1 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Smoking</Label>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={isSmoker === true ? "default" : "outline"}
-                    size="sm"
-                    disabled={isDisabled}
-                    onClick={() => setIsSmoker(true)}
-                  >
-                    Yes
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={isSmoker === false ? "default" : "outline"}
-                    size="sm"
-                    disabled={isDisabled}
-                    onClick={() => setIsSmoker(false)}
-                  >
-                    No
-                  </Button>
-                </div>
+                <YesNoToggle value={isSmoker} onChange={setIsSmoker} disabled={isDisabled} />
               </div>
               {isSmoker && (
                 <div className="flex items-center gap-2">
@@ -306,9 +248,7 @@ export function PatientBackgroundForm({
                   <Input
                     type="number"
                     value={smokingPackYears ?? ""}
-                    onChange={(e) =>
-                      setSmokingPackYears(e.target.value ? parseInt(e.target.value) : null)
-                    }
+                    onChange={(e) => setSmokingPackYears(e.target.value ? parseInt(e.target.value) : null)}
                     disabled={isDisabled}
                     className="w-20 h-8"
                     min={0}
@@ -324,64 +264,35 @@ export function PatientBackgroundForm({
             <Wine className="h-5 w-5 text-muted-foreground" />
             <div className="flex-1 flex items-center justify-between">
               <Label className="text-sm font-medium">Alcohol Use</Label>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={isAlcohol === true ? "default" : "outline"}
-                  size="sm"
-                  disabled={isDisabled}
-                  onClick={() => setIsAlcohol(true)}
-                >
-                  Yes
-                </Button>
-                <Button
-                  type="button"
-                  variant={isAlcohol === false ? "default" : "outline"}
-                  size="sm"
-                  disabled={isDisabled}
-                  onClick={() => setIsAlcohol(false)}
-                >
-                  No
-                </Button>
-              </div>
+              <YesNoToggle value={isAlcohol} onChange={setIsAlcohol} disabled={isDisabled} />
             </div>
           </div>
 
-          {/* Pregnancy (Female only) */}
+          {/* Pregnancy */}
           {patientSex === "Female" && (
             <div className="flex items-start gap-4 p-3 rounded-lg bg-muted/30">
               <Baby className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div className="flex-1 space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium">Pregnancy Status</Label>
-                  <Select
-                    value={pregnancyStatus || ""}
-                    onValueChange={setPregnancyStatus}
-                    disabled={isDisabled}
-                  >
+                  <Select value={pregnancyStatus || ""} onValueChange={setPregnancyStatus} disabled={isDisabled}>
                     <SelectTrigger className="w-40 h-8">
                       <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {PREGNANCY_STATUS_OPTIONS.filter((o) => o.value !== "not_applicable").map(
-                        (opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        )
-                      )}
+                      {PREGNANCY_STATUS_OPTIONS.filter((o) => o.value !== "not_applicable").map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 {pregnancyStatus === "pregnant" && (
                   <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground">Weeks pregnant:</Label>
+                    <Label className="text-xs text-muted-foreground">Weeks:</Label>
                     <Input
                       type="number"
                       value={pregnancyWeeks ?? ""}
-                      onChange={(e) =>
-                        setPregnancyWeeks(e.target.value ? parseInt(e.target.value) : null)
-                      }
+                      onChange={(e) => setPregnancyWeeks(e.target.value ? parseInt(e.target.value) : null)}
                       disabled={isDisabled}
                       className="w-20 h-8"
                       min={1}
@@ -393,14 +304,10 @@ export function PatientBackgroundForm({
             </div>
           )}
         </div>
-      </div>
+      </BackgroundSection>
 
       {/* Medical Conditions */}
-      <div className="space-y-3">
-        <h3 className="font-medium text-sm flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
-          <Pill className="h-4 w-4" />
-          Medical Conditions
-        </h3>
+      <BackgroundSection icon={Pill} title="Medical Conditions">
         <div className="flex flex-wrap gap-2">
           {COMMON_MEDICAL_CONDITIONS.map((condition) => {
             const isSelected = conditions.some((c) => c.code === condition.code)
@@ -423,98 +330,38 @@ export function PatientBackgroundForm({
             )
           })}
         </div>
-      </div>
+      </BackgroundSection>
 
       {/* Current Medications */}
-      <div className="space-y-3">
-        <h3 className="font-medium text-sm flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
-          <Pill className="h-4 w-4" />
-          Current Medications
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {medications.map((med, index) => (
-            <Badge key={index} variant="secondary" className="gap-1 pr-1">
-              {med.name}
-              <button
-                type="button"
-                onClick={() => removeMedication(index)}
-                disabled={isDisabled}
-                className="ml-1 hover:bg-muted rounded-full p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <Input
-            placeholder="Add medication..."
-            value={newMedication}
-            onChange={(e) => setNewMedication(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addMedication())}
-            disabled={isDisabled}
-            className="h-8"
-          />
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={addMedication}
-            disabled={isDisabled || !newMedication.trim()}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <BackgroundSection icon={Pill} title="Current Medications">
+        <ItemList
+          items={medications}
+          onRemove={(i) => setMedications((prev) => prev.filter((_, idx) => idx !== i))}
+          disabled={isDisabled}
+        />
+        <AddItemInput
+          placeholder="Add medication..."
+          onAdd={(name) => setMedications((prev) => [...prev, { name }])}
+          disabled={isDisabled}
+        />
+      </BackgroundSection>
 
       {/* Previous Surgeries */}
-      <div className="space-y-3">
-        <h3 className="font-medium text-sm flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
-          <Scissors className="h-4 w-4" />
-          Previous Surgeries
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {surgeries.map((surgery, index) => (
-            <Badge key={index} variant="secondary" className="gap-1 pr-1">
-              {surgery.name}
-              <button
-                type="button"
-                onClick={() => removeSurgery(index)}
-                disabled={isDisabled}
-                className="ml-1 hover:bg-muted rounded-full p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <Input
-            placeholder="Add surgery..."
-            value={newSurgery}
-            onChange={(e) => setNewSurgery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSurgery())}
-            disabled={isDisabled}
-            className="h-8"
-          />
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={addSurgery}
-            disabled={isDisabled || !newSurgery.trim()}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <BackgroundSection icon={Scissors} title="Previous Surgeries">
+        <ItemList
+          items={surgeries}
+          onRemove={(i) => setSurgeries((prev) => prev.filter((_, idx) => idx !== i))}
+          disabled={isDisabled}
+        />
+        <AddItemInput
+          placeholder="Add surgery..."
+          onAdd={(name) => setSurgeries((prev) => [...prev, { name }])}
+          disabled={isDisabled}
+        />
+      </BackgroundSection>
 
       {/* Immunizations */}
-      <div className="space-y-3">
-        <h3 className="font-medium text-sm flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
-          <Syringe className="h-4 w-4" />
-          Immunizations
-        </h3>
+      <BackgroundSection icon={Syringe} title="Immunizations">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {COMMON_IMMUNIZATIONS.map((vaccine) => {
             const isSelected = immunizations.some((i) => i.name === vaccine.code)
@@ -539,14 +386,10 @@ export function PatientBackgroundForm({
             )
           })}
         </div>
-      </div>
+      </BackgroundSection>
 
       {/* Family History */}
-      <div className="space-y-3">
-        <h3 className="font-medium text-sm flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
-          <Users className="h-4 w-4" />
-          Family History
-        </h3>
+      <BackgroundSection icon={Users} title="Family History">
         <div className="space-y-2">
           {FAMILY_HISTORY_CONDITIONS.map((condition) => {
             const item = familyHistory[condition.key] || { present: false }
@@ -563,9 +406,7 @@ export function PatientBackgroundForm({
                 <Checkbox
                   checked={item.present}
                   disabled={isDisabled}
-                  onCheckedChange={(checked) =>
-                    updateFamilyHistory(condition.key, { present: !!checked })
-                  }
+                  onCheckedChange={(checked) => updateFamilyHistory(condition.key, { present: !!checked })}
                 />
                 <span className="flex-1 text-sm font-medium">{condition.label}</span>
                 {item.present && (
@@ -579,9 +420,7 @@ export function PatientBackgroundForm({
                     </SelectTrigger>
                     <SelectContent>
                       {FAMILY_RELATION_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -597,7 +436,7 @@ export function PatientBackgroundForm({
           disabled={isDisabled}
           className="h-8"
         />
-      </div>
+      </BackgroundSection>
 
       {/* Save Button */}
       <div className="flex items-center justify-between pt-2 border-t">
@@ -610,11 +449,7 @@ export function PatientBackgroundForm({
         )}
         <div className="flex-1" />
         <Button type="button" onClick={handleSave} disabled={isDisabled} variant="secondary">
-          {isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
+          {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
           Save Background
         </Button>
       </div>
