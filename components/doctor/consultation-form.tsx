@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { PatientSnapshot } from "./patient-snapshot"
+import { PatientHistorySheet } from "./patient-history-sheet"
 import { TriageSummary } from "./triage-summary"
 import { PhysicalExamSection } from "./sections/physical-exam-section"
 import { AssessmentSection } from "./sections/assessment-section"
@@ -67,6 +68,7 @@ export function ConsultationForm({
   const [showCompleteDialog, setShowCompleteDialog] = useState(false)
   const [nextStatus, setNextStatus] = useState<"FOR_LAB" | "FOR_PHARMACY" | "DONE">("DONE")
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
 
   // Auto-save ref
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -155,6 +157,15 @@ export function ConsultationForm({
         patient={encounter.patient}
         triageRecord={encounter.triageRecord}
         chiefComplaint={encounter.chiefComplaint}
+        onViewHistory={() => setIsHistoryOpen(true)}
+      />
+
+      {/* Patient History Sheet */}
+      <PatientHistorySheet
+        patientId={encounter.patient.id}
+        patientName={`${encounter.patient.lastName}, ${encounter.patient.firstName}`}
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
       />
 
       {/* Main Content */}
