@@ -20,6 +20,7 @@ export async function getEncounterDetailsAction(input: {
     where: {
       id: data.encounterId,
       deletedAt: null,
+      ...(session.facilityId ? { facilityId: session.facilityId } : {}),
       patient: {
         deletedAt: null,
       },
