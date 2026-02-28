@@ -77,6 +77,8 @@ export function AssessmentSection({
         } else {
           toast.error(result.error.message)
         }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to add diagnosis")
       } finally {
         setIsAdding(false)
       }
@@ -94,6 +96,8 @@ export function AssessmentSection({
       } else {
         toast.error(result.error.message)
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to remove diagnosis")
     } finally {
       setRemovingId(null)
     }
