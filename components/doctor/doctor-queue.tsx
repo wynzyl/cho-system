@@ -25,7 +25,7 @@ export function DoctorQueue({
   onStartConsultation,
   onRefresh,
 }: DoctorQueueProps) {
-  const waitingPatients = queue.filter((q) => q.status === "TRIAGED")
+  const waitingPatients = queue.filter((q) => q.status === "WAIT_DOCTOR")
   const myConsults = queue.filter((q) => q.status === "IN_CONSULT")
 
   return (

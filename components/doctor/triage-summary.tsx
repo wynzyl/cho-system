@@ -35,13 +35,13 @@ export function TriageSummary({ triageRecord }: TriageSummaryProps) {
           icon={Activity}
           label="Blood Pressure"
           value={
-            triageRecord.bpSystolic && triageRecord.bpDiastolic
+            triageRecord.bpSystolic != null && triageRecord.bpDiastolic != null
               ? `${triageRecord.bpSystolic}/${triageRecord.bpDiastolic}`
               : null
           }
           unit="mmHg"
           warning={
-            triageRecord.bpSystolic && triageRecord.bpDiastolic
+            triageRecord.bpSystolic != null && triageRecord.bpDiastolic != null
               ? triageRecord.bpSystolic >= 140 || triageRecord.bpDiastolic >= 90
               : false
           }
@@ -52,7 +52,7 @@ export function TriageSummary({ triageRecord }: TriageSummaryProps) {
           value={triageRecord.heartRate}
           unit="bpm"
           warning={
-            triageRecord.heartRate
+            triageRecord.heartRate != null
               ? triageRecord.heartRate > 100 || triageRecord.heartRate < 60
               : false
           }
@@ -63,7 +63,7 @@ export function TriageSummary({ triageRecord }: TriageSummaryProps) {
           value={triageRecord.respiratoryRate}
           unit="/min"
           warning={
-            triageRecord.respiratoryRate
+            triageRecord.respiratoryRate != null
               ? triageRecord.respiratoryRate > 20 || triageRecord.respiratoryRate < 12
               : false
           }
@@ -73,14 +73,14 @@ export function TriageSummary({ triageRecord }: TriageSummaryProps) {
           label="Temperature"
           value={triageRecord.temperatureC}
           unit="°C"
-          warning={triageRecord.temperatureC ? triageRecord.temperatureC >= 38 : false}
+          warning={triageRecord.temperatureC != null ? triageRecord.temperatureC >= 38 : false}
         />
         <VitalCard
           icon={Droplets}
           label="SpO2"
           value={triageRecord.spo2}
           unit="%"
-          warning={triageRecord.spo2 ? triageRecord.spo2 < 95 : false}
+          warning={triageRecord.spo2 != null ? triageRecord.spo2 < 95 : false}
         />
         <VitalCard
           icon={Scale}
@@ -94,7 +94,7 @@ export function TriageSummary({ triageRecord }: TriageSummaryProps) {
           value={triageRecord.heightCm}
           unit="cm"
         />
-        {triageRecord.weightKg && triageRecord.heightCm && (
+        {triageRecord.weightKg != null && triageRecord.heightCm != null && (
           <VitalCard
             icon={Scale}
             label="BMI"
@@ -133,7 +133,7 @@ export function TriageSummary({ triageRecord }: TriageSummaryProps) {
             </div>
 
             {/* Pain Severity */}
-            {triageRecord.painSeverity && (
+            {triageRecord.painSeverity != null && (
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground">Pain Severity</div>
                 <div className="flex items-center gap-2">

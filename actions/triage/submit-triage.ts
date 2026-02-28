@@ -90,11 +90,11 @@ export async function submitTriageAction(
       },
     })
 
-    // Update Encounter status to TRIAGED
+    // Update Encounter status to WAIT_DOCTOR (ready for doctor consultation)
     await tx.encounter.update({
       where: { id: data.encounterId },
       data: {
-        status: "TRIAGED",
+        status: "WAIT_DOCTOR",
         triageById: session.userId,
         chiefComplaint: data.chiefComplaint ?? encounter.chiefComplaint,
         triageNotes: data.triageNotes ?? null,
@@ -114,7 +114,7 @@ export async function submitTriageAction(
           patientCode: encounter.patient.patientCode,
           triageRecordId: triageRecord.id,
           previousStatus: "WAIT_TRIAGE",
-          newStatus: "TRIAGED",
+          newStatus: "WAIT_DOCTOR",
         },
       },
     })

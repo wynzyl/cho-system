@@ -15,12 +15,12 @@ export async function startConsultationAction(input: {
   if (!validation.ok) return validation.result
   const data = validation.data
 
-  // Verify encounter exists and is in TRIAGED status
+  // Verify encounter exists and is in WAIT_DOCTOR status
   const encounter = await db.encounter.findFirst({
     where: {
       id: data.encounterId,
       facilityId: session.facilityId,
-      status: "TRIAGED",
+      status: "WAIT_DOCTOR",
       deletedAt: null,
     },
     include: {
@@ -64,7 +64,7 @@ export async function startConsultationAction(input: {
         metadata: {
           action: "CONSULTATION_STARTED",
           patientCode: encounter.patient.patientCode,
-          previousStatus: "TRIAGED",
+          previousStatus: "WAIT_DOCTOR",
           newStatus: "IN_CONSULT",
         },
       },

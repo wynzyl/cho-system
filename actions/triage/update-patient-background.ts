@@ -1,6 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
+import { Prisma } from "@prisma/client"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import {
   updatePatientBackgroundSchema,
@@ -38,16 +39,17 @@ export async function updatePatientBackgroundAction(
 
   await db.$transaction(async (tx) => {
     // Update patient background
+    // Use Prisma.JsonNull to properly clear JSON fields when null is passed
     await tx.patient.update({
       where: { id: data.patientId },
       data: {
-        isSmoker: data.isSmoker ?? undefined,
-        smokingPackYears: data.smokingPackYears ?? undefined,
-        isAlcohol: data.isAlcohol ?? undefined,
-        pregnancyStatus: data.pregnancyStatus ?? undefined,
-        pregnancyWeeks: data.pregnancyWeeks ?? undefined,
-        medicalHistoryData: data.medicalHistoryData ?? undefined,
-        familyHistoryData: data.familyHistoryData ?? undefined,
+        isSmoker: data.isSmoker,
+        smokingPackYears: data.smokingPackYears,
+        isAlcohol: data.isAlcohol,
+        pregnancyStatus: data.pregnancyStatus,
+        pregnancyWeeks: data.pregnancyWeeks,
+        medicalHistoryData: data.medicalHistoryData === null ? Prisma.JsonNull : data.medicalHistoryData,
+        familyHistoryData: data.familyHistoryData === null ? Prisma.JsonNull : data.familyHistoryData,
         medicalHistoryUpdatedAt: new Date(),
         medicalHistoryUpdatedById: session.userId,
       },

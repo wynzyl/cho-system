@@ -42,13 +42,14 @@ export function PhysicalExamSection({ value, onChange }: PhysicalExamSectionProp
 
   const selectAllNormal = (system: BodySystemValue) => {
     const currentData = value ?? { version: 1 }
+    const existingSystem = currentData[system] ?? { findings: [] }
     const normalFindings = PE_FINDINGS[system]
       .filter((f) => f.isNormal)
       .map((f) => f.value)
 
     onChange({
       ...currentData,
-      [system]: { findings: normalFindings },
+      [system]: { ...existingSystem, findings: normalFindings },
     })
   }
 
@@ -95,6 +96,7 @@ export function PhysicalExamSection({ value, onChange }: PhysicalExamSectionProp
           >
             {/* Header */}
             <button
+              type="button"
               className="flex w-full items-center justify-between px-4 py-3 text-left"
               onClick={() => setExpandedSystem(isExpanded ? null : (system.value as BodySystemValue))}
             >

@@ -1,6 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
+import { Prisma } from "@prisma/client"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { saveConsultationSchema, type SaveConsultationInput } from "@/lib/validators/doctor"
 import { validateInput } from "@/lib/utils"
@@ -37,14 +38,15 @@ export async function saveConsultationAction(
   }
 
   // Update encounter with consultation data
+  // Use Prisma.JsonNull to properly clear JSON fields when null is passed
   await db.encounter.update({
     where: { id: data.encounterId },
     data: {
-      hpiDoctorNotes: data.hpiDoctorNotes ?? undefined,
-      physicalExamData: data.physicalExamData ?? undefined,
-      clinicalImpression: data.clinicalImpression ?? undefined,
-      proceduresData: data.proceduresData ?? undefined,
-      adviceData: data.adviceData ?? undefined,
+      hpiDoctorNotes: data.hpiDoctorNotes === null ? Prisma.JsonNull : data.hpiDoctorNotes,
+      physicalExamData: data.physicalExamData === null ? Prisma.JsonNull : data.physicalExamData,
+      clinicalImpression: data.clinicalImpression,
+      proceduresData: data.proceduresData === null ? Prisma.JsonNull : data.proceduresData,
+      adviceData: data.adviceData === null ? Prisma.JsonNull : data.adviceData,
     },
   })
 

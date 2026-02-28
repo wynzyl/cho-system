@@ -44,7 +44,7 @@ export async function createEncounterForPatientAction(
   // RULES BEFORE ENCOUNTER (see Project_roadmap.md):
   // 1. Do not allow a new WAIT_TRIAGE encounter if one already exists.
   // 2. If a previous WAIT_TRIAGE encounter exists, reuse it and reschedule to now.
-  // 3. If a previous FOR_LAB encounter exists, mark as TRIAGED (follow-up visit).
+  // 3. If a previous FOR_LAB encounter exists, mark as WAIT_DOCTOR (follow-up visit).
   try {
     const result = await db.$transaction(async (tx) => {
       const existingWaitTriage = await tx.encounter.findFirst({
@@ -106,7 +106,7 @@ export async function createEncounterForPatientAction(
         const updated = await tx.encounter.update({
           where: { id: existingForLab.id },
           data: {
-            status: "TRIAGED",
+            status: "WAIT_DOCTOR",
           },
         })
 
@@ -122,7 +122,7 @@ export async function createEncounterForPatientAction(
               patientCode: patient.patientCode,
               rule: "FOR_LAB_FOLLOWUP",
               previousStatus: "FOR_LAB",
-              newStatus: "TRIAGED",
+              newStatus: "WAIT_DOCTOR",
             },
           },
         })

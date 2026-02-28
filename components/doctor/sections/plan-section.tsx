@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState } from "react"
 import { Plus, X, Loader2, Pill, FlaskConical, Stethoscope, MessageSquare, Calendar } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -114,6 +114,7 @@ export function PlanSection({
 // =============================================================================
 
 interface MedicationItem {
+  id: string
   medicineName: string
   dosage: string
   frequency: string
@@ -138,6 +139,7 @@ function MedicationsTab({
     setItems([
       ...items,
       {
+        id: crypto.randomUUID(),
         medicineName: "",
         dosage: "",
         frequency: "",
@@ -185,6 +187,8 @@ function MedicationsTab({
       } else {
         toast.error(result.error.message)
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to add prescription")
     } finally {
       setIsAdding(false)
     }
@@ -220,7 +224,7 @@ function MedicationsTab({
         <Label>Add Prescription</Label>
 
         {items.map((item, index) => (
-          <div key={index} className="grid grid-cols-12 gap-2 rounded-lg border bg-muted/30 p-2">
+          <div key={item.id} className="grid grid-cols-12 gap-2 rounded-lg border bg-muted/30 p-2">
             <Input
               placeholder="Medicine name*"
               value={item.medicineName}
@@ -253,10 +257,12 @@ function MedicationsTab({
               className="col-span-2"
             />
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               className="col-span-1"
               onClick={() => removeItem(index)}
+              aria-label={`Remove ${item.medicineName || "medication"}`}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -270,12 +276,12 @@ function MedicationsTab({
         ))}
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={addEmptyItem}>
+          <Button type="button" variant="outline" onClick={addEmptyItem}>
             <Plus className="mr-1 h-4 w-4" />
             Add Item
           </Button>
           {items.length > 0 && (
-            <Button onClick={handleSubmit} disabled={isAdding}>
+            <Button type="button" onClick={handleSubmit} disabled={isAdding}>
               {isAdding && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
               Save Prescription
             </Button>
@@ -291,6 +297,7 @@ function MedicationsTab({
 // =============================================================================
 
 interface LabTestItem {
+  id: string
   testCode: string
   testName: string
   notes: string
@@ -313,7 +320,7 @@ function LaboratoryTab({
     if (items.some((item) => item.testCode === test.code)) {
       return
     }
-    setItems([...items, { testCode: test.code, testName: test.name, notes: "" }])
+    setItems([...items, { id: crypto.randomUUID(), testCode: test.code, testName: test.name, notes: "" }])
   }
 
   const removeItem = (index: number) => {
@@ -349,6 +356,8 @@ function LaboratoryTab({
       } else {
         toast.error(result.error.message)
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to add lab order")
     } finally {
       setIsAdding(false)
     }
@@ -415,7 +424,7 @@ function LaboratoryTab({
             <Label>Selected Tests</Label>
             {items.map((item, index) => (
               <div
-                key={index}
+                key={item.id}
                 className="flex items-center gap-2 rounded-lg border bg-muted/30 p-2"
               >
                 <Badge variant="outline">{item.testCode}</Badge>
@@ -426,7 +435,13 @@ function LaboratoryTab({
                   onChange={(e) => updateNotes(index, e.target.value)}
                   className="w-48"
                 />
-                <Button variant="ghost" size="icon" onClick={() => removeItem(index)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeItem(index)}
+                  aria-label={`Remove ${item.testName}`}
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -435,7 +450,7 @@ function LaboratoryTab({
         )}
 
         {items.length > 0 && (
-          <Button onClick={handleSubmit} disabled={isAdding}>
+          <Button type="button" onClick={handleSubmit} disabled={isAdding}>
             {isAdding && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
             Submit Lab Order
           </Button>
@@ -550,10 +565,13 @@ function ProceduresTab({
           value={customProcedure}
           onChange={(e) => setCustomProcedure(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") addCustomProcedure()
+            if (e.key === "Enter") {
+              e.preventDefault()
+              addCustomProcedure()
+            }
           }}
         />
-        <Button variant="outline" onClick={addCustomProcedure}>
+        <Button type="button" variant="outline" onClick={addCustomProcedure}>
           <Plus className="mr-1 h-4 w-4" />
           Add
         </Button>
@@ -639,10 +657,13 @@ function AdviceTab({
           value={customAdvice}
           onChange={(e) => setCustomAdvice(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") addCustomAdvice()
+            if (e.key === "Enter") {
+              e.preventDefault()
+              addCustomAdvice()
+            }
           }}
         />
-        <Button variant="outline" onClick={addCustomAdvice}>
+        <Button type="button" variant="outline" onClick={addCustomAdvice}>
           <Plus className="mr-1 h-4 w-4" />
           Add
         </Button>

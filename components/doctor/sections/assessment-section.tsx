@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
 import { searchSubcategoriesAction, type SubcategorySearchResult } from "@/actions/doctor/diagnosis"
 import { addDiagnosisAction, removeDiagnosisAction, type DiagnosisForConsult } from "@/actions/doctor"
 import { toast } from "sonner"
@@ -155,6 +154,7 @@ export function AssessmentSection({
                   )}
                 </div>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-muted-foreground hover:text-destructive"
@@ -196,6 +196,7 @@ export function AssessmentSection({
           <div className="max-h-64 overflow-y-auto rounded-lg border">
             {searchResults.map((result) => (
               <button
+                type="button"
                 key={result.id}
                 className="flex w-full items-start gap-3 border-b px-3 py-2 text-left transition-colors hover:bg-muted/50 last:border-b-0"
                 onClick={() => handleSelectResult(result)}
@@ -226,11 +227,13 @@ export function AssessmentSection({
             onChange={(e) => setCustomDiagnosis(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && customDiagnosis.trim()) {
+                e.preventDefault()
                 handleAddDiagnosis(customDiagnosis.trim())
               }
             }}
           />
           <Button
+            type="button"
             onClick={() => handleAddDiagnosis(customDiagnosis.trim())}
             disabled={!customDiagnosis.trim() || isAdding}
           >

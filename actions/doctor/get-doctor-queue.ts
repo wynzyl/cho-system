@@ -51,12 +51,15 @@ export async function getDoctorQueueAction(): Promise<ActionResult<DoctorQueueIt
     where: {
       facilityId: session.facilityId,
       deletedAt: null,
+      patient: {
+        deletedAt: null,
+      },
       occurredAt: {
         gte: today,
         lt: tomorrow,
       },
       status: {
-        in: ["TRIAGED", "IN_CONSULT"],
+        in: ["WAIT_DOCTOR", "IN_CONSULT"],
       },
     },
     include: {
@@ -93,8 +96,8 @@ export async function getDoctorQueueAction(): Promise<ActionResult<DoctorQueueIt
       },
     },
     orderBy: [
-      { status: "asc" }, // IN_CONSULT first (doctor's active cases)
-      { occurredAt: "asc" }, // Then FIFO
+      { status: "asc" }, // IN_CONSULT first alphabetically (I < W), then WAIT_DOCTOR
+      { occurredAt: "asc" }, // Then FIFO by arrival time
     ],
   })
 

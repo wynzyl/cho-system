@@ -144,6 +144,9 @@ export async function getEncounterForConsultAction(input: {
       id: data.encounterId,
       facilityId: session.facilityId,
       deletedAt: null,
+      patient: {
+        deletedAt: null,
+      },
     },
     include: {
       patient: {
