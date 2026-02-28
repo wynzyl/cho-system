@@ -157,7 +157,14 @@ PhilHealth data captured in patient registration (not separate module):
 
 
 ### Rules (Non-negotiable)
-- Do NOT build dashboards before scope logic exists. Multi-facility
+- Do NOT build dashboards before scope logic exists. Multi-facility and Multi-user
 enforcement is mandatory from Day 1.
+- Encounter statuses must follow workflow: WAIT_TRIAGE → TRIAGED → WAIT_DOCTOR → IN_CONSULT → FOR_LAB/FOR_PHARMACY → DONE.
+- Enforce role-based access control at 3 levels: route guard, server action validation, and audit logging. Do NOT rely on UI hiding for security.
 - Always create a TODO list before implementing any features.
-- Always apply reusable components
+- Always apply reusable components.
+- Use more defensive key generation.
+- For production safety, consider validating at least one level deeper or using Zod schemas for runtime validation when parsing from external sources.
+- Consider tracking "dirty" state and only triggering auto-save when form data has actually changed since the last save.
+- All medical data (patients, encounters, diagnoses) must use soft deletes with deletedAt/deletedById fields. Never hard delete patient/encounter data.
+- FIFO is required in queing.
