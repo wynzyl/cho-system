@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition, useMemo } from "react"
+import { useState, useTransition, useMemo, useRef, useEffect } from "react"
 import {
   Cigarette,
   Wine,
@@ -115,6 +115,16 @@ export function PatientBackgroundForm({
   const [isPending, startTransition] = useTransition()
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const saveSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveSuccessTimeoutRef.current) {
+        clearTimeout(saveSuccessTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Parse initial data
   const medicalData = useMemo(
@@ -193,7 +203,11 @@ export function PatientBackgroundForm({
 
       if (result.ok) {
         setSaveSuccess(true)
-        setTimeout(() => setSaveSuccess(false), 3000)
+        // Clear any existing timeout before setting new one
+        if (saveSuccessTimeoutRef.current) {
+          clearTimeout(saveSuccessTimeoutRef.current)
+        }
+        saveSuccessTimeoutRef.current = setTimeout(() => setSaveSuccess(false), 3000)
       } else {
         setError(result.error.message)
       }
