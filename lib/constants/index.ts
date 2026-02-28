@@ -69,6 +69,10 @@ export {
   COMMON_ADVICE,
   COMMON_LAB_TESTS,
   PAIN_CHARACTER_OPTIONS,
+  COMMON_MEDICAL_CONDITIONS,
+  FAMILY_HISTORY_CONDITIONS,
+  FAMILY_RELATION_OPTIONS,
+  COMMON_IMMUNIZATIONS,
 } from "./consultation"
 export type {
   AssociatedSymptomValue,
@@ -76,4 +80,6 @@ export type {
   PregnancyStatusValue,
   BodySystemValue,
   ProcedureValue,
+  MedicalConditionCode,
+  FamilyHistoryKey,
 } from "./consultation"
