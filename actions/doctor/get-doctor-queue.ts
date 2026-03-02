@@ -10,6 +10,9 @@ export interface DoctorQueueItem {
   occurredAt: Date
   chiefComplaint: string | null
   consultStartedAt: Date | null
+  claimedById: string | null
+  claimedAt: Date | null
+  claimedByName: string | null
   patient: {
     id: string
     patientCode: string
@@ -37,7 +40,12 @@ export interface DoctorQueueItem {
   } | null
 }
 
-export async function getDoctorQueueAction(): Promise<ActionResult<DoctorQueueItem[]>> {
+export interface DoctorQueueResponse {
+  items: DoctorQueueItem[]
+  currentUserId: string
+}
+
+export async function getDoctorQueueAction(): Promise<ActionResult<DoctorQueueResponse>> {
   const session = await requireRoleForAction(["DOCTOR"])
 
   // Get today's date range
@@ -102,6 +110,12 @@ export async function getDoctorQueueAction(): Promise<ActionResult<DoctorQueueIt
           name: true,
         },
       },
+      claimedBy: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
     orderBy: [
       { status: "asc" }, // IN_CONSULT first alphabetically (I < W), then WAIT_DOCTOR
@@ -116,6 +130,9 @@ export async function getDoctorQueueAction(): Promise<ActionResult<DoctorQueueIt
     occurredAt: enc.occurredAt,
     chiefComplaint: enc.chiefComplaint,
     consultStartedAt: enc.consultStartedAt,
+    claimedById: enc.claimedById,
+    claimedAt: enc.claimedAt,
+    claimedByName: enc.claimedBy?.name ?? null,
     patient: enc.patient,
     triageRecord: enc.triageRecord
       ? {
@@ -135,5 +152,11 @@ export async function getDoctorQueueAction(): Promise<ActionResult<DoctorQueueIt
     doctor: enc.doctor,
   }))
 
-  return { ok: true, data: queueItems }
+  return {
+    ok: true,
+    data: {
+      items: queueItems,
+      currentUserId: session.userId,
+    },
+  }
 }

@@ -18,6 +18,14 @@ export const startConsultationSchema = z.strictObject({
   encounterId: z.uuid("Invalid encounter ID"),
 })
 
+export const claimForConsultSchema = z.strictObject({
+  encounterId: z.uuid("Invalid encounter ID"),
+})
+
+export const releaseFromConsultSchema = z.strictObject({
+  encounterId: z.uuid("Invalid encounter ID"),
+})
+
 export const saveConsultationSchema = z.strictObject({
   encounterId: z.uuid("Invalid encounter ID"),
 
@@ -208,6 +216,8 @@ export const getEncounterDetailsSchema = z.strictObject({
 export type GetDoctorQueueInput = z.infer<typeof getDoctorQueueSchema>
 export type GetEncounterForConsultInput = z.infer<typeof getEncounterForConsultSchema>
 export type StartConsultationInput = z.infer<typeof startConsultationSchema>
+export type ClaimForConsultInput = z.infer<typeof claimForConsultSchema>
+export type ReleaseFromConsultInput = z.infer<typeof releaseFromConsultSchema>
 export type SaveConsultationInput = z.infer<typeof saveConsultationSchema>
 export type CompleteConsultationInput = z.infer<typeof completeConsultationSchema>
 export type AddDiagnosisInput = z.infer<typeof addDiagnosisSchema>
