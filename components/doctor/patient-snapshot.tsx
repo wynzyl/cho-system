@@ -84,6 +84,7 @@ export function PatientSnapshot({ patient, triageRecord, chiefComplaint, onViewH
         <div className="flex items-center gap-2">
           {onViewHistory && (
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={onViewHistory}

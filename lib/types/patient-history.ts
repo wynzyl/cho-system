@@ -191,5 +191,9 @@ export function isHistoricalTriageRecord(
 ): data is HistoricalTriageRecord {
   if (!data || typeof data !== "object") return false
   const d = data as HistoricalTriageRecord
-  return "recordedAt" in d && Array.isArray(d.associatedSymptoms)
+  return (
+    "recordedAt" in d &&
+    Array.isArray(d.associatedSymptoms) &&
+    Array.isArray(d.exposureFlags)
+  )
 }

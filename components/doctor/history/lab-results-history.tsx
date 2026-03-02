@@ -10,10 +10,10 @@ interface LabResultsHistoryProps {
   encounters: HistoricalEncounterSummary[]
 }
 
-const LAB_STATUS_COLORS: Record<string, string> = {
-  RELEASED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  IN_PROGRESS: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  PENDING: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+const ENCOUNTER_STATUS_COLORS: Record<string, string> = {
+  DONE: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  FOR_LAB: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  FOR_PHARMACY: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   CANCELLED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 }
 
@@ -62,7 +62,7 @@ export function LabResultsHistory({ encounters }: LabResultsHistoryProps) {
                     variant="secondary"
                     className={cn(
                       "text-xs",
-                      LAB_STATUS_COLORS[enc.status] || "bg-gray-100"
+                      ENCOUNTER_STATUS_COLORS[enc.status] || "bg-gray-100"
                     )}
                   >
                     {enc.status.replace(/_/g, " ")}

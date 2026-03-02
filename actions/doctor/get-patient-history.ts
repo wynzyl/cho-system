@@ -48,11 +48,16 @@ export async function getPatientHistoryAction(input: {
     }
   }
 
+  // Build facility filter based on user's scope
+  const facilityFilter =
+    session.scope === "FACILITY_ONLY" ? { facilityId: session.facilityId } : {}
+
   // Fetch encounters with summaries (limited, ordered by most recent)
   const encounters = await db.encounter.findMany({
     where: {
       patientId: data.patientId,
       deletedAt: null,
+      ...facilityFilter,
       // Only show completed encounters in history (not active ones)
       status: {
         in: ["DONE", "FOR_LAB", "FOR_PHARMACY", "CANCELLED"],
@@ -159,7 +164,9 @@ export async function getPatientHistoryAction(input: {
         if (enc.occurredAt > existing.lastOccurrence) {
           existing.lastOccurrence = enc.occurredAt
         }
-        existing.encounterIds.push(enc.id)
+        if (!existing.encounterIds.includes(enc.id)) {
+          existing.encounterIds.push(enc.id)
+        }
       } else {
         diagnosisMap.set(key, {
           text: d.text,
@@ -261,6 +268,7 @@ export async function getPatientHistoryAction(input: {
     where: {
       patientId: data.patientId,
       deletedAt: null,
+      ...facilityFilter,
       status: {
         in: ["DONE", "FOR_LAB", "FOR_PHARMACY", "CANCELLED"],
       },
