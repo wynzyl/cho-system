@@ -48,11 +48,13 @@ export async function removeDiagnosisAction(
     }
   }
 
-  // Verify encounter is in IN_CONSULT and this doctor owns it
+  // Verify encounter is in IN_CONSULT and this doctor owns it (ADMIN can bypass)
+  const isAdmin = session.role === "ADMIN"
+  const isAssignedDoctor = diagnosis.encounter.doctorId === session.userId
   if (
     diagnosis.encounter.status !== "IN_CONSULT" ||
-    diagnosis.encounter.doctorId !== session.userId ||
-    diagnosis.encounter.facilityId !== session.facilityId
+    diagnosis.encounter.facilityId !== session.facilityId ||
+    (!isAdmin && !isAssignedDoctor)
   ) {
     return {
       ok: false,

@@ -47,6 +47,8 @@ export async function getDoctorQueueAction(): Promise<ActionResult<DoctorQueueIt
   tomorrow.setDate(tomorrow.getDate() + 1)
 
   // Fetch encounters that are ready for or in consultation
+  // For IN_CONSULT, only show encounters assigned to current doctor (unless ADMIN)
+  const isAdmin = session.role === "ADMIN"
   const encounters = await db.encounter.findMany({
     where: {
       facilityId: session.facilityId,
@@ -58,9 +60,15 @@ export async function getDoctorQueueAction(): Promise<ActionResult<DoctorQueueIt
         gte: today,
         lt: tomorrow,
       },
-      status: {
-        in: ["WAIT_DOCTOR", "IN_CONSULT"],
-      },
+      OR: [
+        // WAIT_DOCTOR: Any doctor can see and start these
+        { status: "WAIT_DOCTOR" },
+        // IN_CONSULT: Only show if assigned to current doctor (or if ADMIN)
+        {
+          status: "IN_CONSULT",
+          ...(isAdmin ? {} : { doctorId: session.userId }),
+        },
+      ],
     },
     include: {
       patient: {
