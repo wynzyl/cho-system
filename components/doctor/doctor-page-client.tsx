@@ -1,12 +1,14 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { DoctorQueue } from "./doctor-queue"
 import { ConsultationForm } from "./consultation-form"
 import {
   getDoctorQueueAction,
   getEncounterForConsultAction,
   startConsultationAction,
+  claimForConsultAction,
+  releaseFromConsultAction,
   type DoctorQueueItem,
   type EncounterForConsult,
 } from "@/actions/doctor"
@@ -14,10 +16,14 @@ import { toast } from "sonner"
 
 export function DoctorPageClient() {
   const [queue, setQueue] = useState<DoctorQueueItem[]>([])
+  const [currentUserId, setCurrentUserId] = useState<string>("")
   const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(null)
   const [encounter, setEncounter] = useState<EncounterForConsult | null>(null)
   const [isLoadingQueue, setIsLoadingQueue] = useState(true)
   const [isLoadingEncounter, setIsLoadingEncounter] = useState(false)
+
+  // Track currently claimed encounter for cleanup
+  const claimedEncounterIdRef = useRef<string | null>(null)
 
   // Fetch queue
   const fetchQueue = useCallback(async () => {
@@ -25,7 +31,8 @@ export function DoctorPageClient() {
     try {
       const result = await getDoctorQueueAction()
       if (result.ok) {
-        setQueue(result.data)
+        setQueue(result.data.items)
+        setCurrentUserId(result.data.currentUserId)
       } else {
         toast.error(result.error.message)
       }
@@ -82,11 +89,44 @@ export function DoctorPageClient() {
     loadEncounter()
   }, [selectedEncounterId])
 
-  // Handle starting consultation
+  // Release claim helper
+  const releaseClaim = useCallback(async (encounterId: string) => {
+    try {
+      await releaseFromConsultAction({ encounterId })
+    } catch (error) {
+      console.error("Failed to release claim:", error)
+    }
+  }, [])
+
+  // Handle claiming a patient (FIFO)
+  const handleClaimEncounter = async (encounterId: string) => {
+    // Release any existing claim first
+    if (claimedEncounterIdRef.current && claimedEncounterIdRef.current !== encounterId) {
+      await releaseClaim(claimedEncounterIdRef.current)
+      claimedEncounterIdRef.current = null
+    }
+
+    try {
+      const result = await claimForConsultAction({ encounterId })
+      if (result.ok) {
+        claimedEncounterIdRef.current = encounterId
+        toast.success("Patient claimed - ready to start consultation")
+        await fetchQueue()
+      } else {
+        toast.error(result.error.message)
+      }
+    } catch {
+      toast.error("Failed to claim patient")
+    }
+  }
+
+  // Handle starting consultation (after claiming)
   const handleStartConsultation = async (encounterId: string) => {
     try {
       const result = await startConsultationAction({ encounterId })
       if (result.ok) {
+        // Clear claim ref since consultation has started
+        claimedEncounterIdRef.current = null
         toast.success("Consultation started")
         setSelectedEncounterId(encounterId)
         await fetchQueue()
@@ -98,17 +138,36 @@ export function DoctorPageClient() {
     }
   }
 
-  // Handle selecting an existing consultation
-  const handleSelectEncounter = (encounterId: string) => {
-    setSelectedEncounterId(encounterId)
+  // Handle selecting an existing consultation (IN_CONSULT or claimed)
+  const handleSelectEncounter = async (encounterId: string) => {
+    // Check if this is a claimed WAIT_DOCTOR encounter
+    const queueItem = queue.find((q) => q.id === encounterId)
+    if (queueItem?.status === "WAIT_DOCTOR" && queueItem.claimedById === currentUserId) {
+      // This is our claimed patient - start consultation
+      await handleStartConsultation(encounterId)
+    } else {
+      // This is an IN_CONSULT encounter - just select it
+      setSelectedEncounterId(encounterId)
+    }
   }
 
   // Handle consultation complete
   const handleConsultationComplete = async () => {
     setSelectedEncounterId(null)
     setEncounter(null)
+    claimedEncounterIdRef.current = null
     await fetchQueue()
   }
+
+  // Release claim on unmount
+  useEffect(() => {
+    return () => {
+      if (claimedEncounterIdRef.current) {
+        // Fire and forget - component is unmounting
+        releaseFromConsultAction({ encounterId: claimedEncounterIdRef.current })
+      }
+    }
+  }, [])
 
   return (
     <div className="flex h-[calc(100vh-4rem)] gap-4">
@@ -118,8 +177,9 @@ export function DoctorPageClient() {
           queue={queue}
           isLoading={isLoadingQueue}
           selectedEncounterId={selectedEncounterId}
+          currentUserId={currentUserId}
           onSelectEncounter={handleSelectEncounter}
-          onStartConsultation={handleStartConsultation}
+          onClaimEncounter={handleClaimEncounter}
           onRefresh={fetchQueue}
         />
       </div>

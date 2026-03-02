@@ -4,7 +4,13 @@ export * from "./prescriptions"
 export * from "./lab-orders"
 
 // Queue and encounter actions
-export { getDoctorQueueAction, type DoctorQueueItem } from "./get-doctor-queue"
+export {
+  getDoctorQueueAction,
+  type DoctorQueueItem,
+  type DoctorQueueResponse,
+} from "./get-doctor-queue"
+export { claimForConsultAction } from "./claim-for-consult"
+export { releaseFromConsultAction } from "./release-from-consult"
 export {
   getEncounterForConsultAction,
   type EncounterForConsult,

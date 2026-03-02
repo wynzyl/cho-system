@@ -1,6 +1,6 @@
 "use client"
 
-import { RefreshCw, User, Clock, AlertTriangle } from "lucide-react"
+import { RefreshCw, User, Clock, AlertTriangle, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
@@ -8,12 +8,70 @@ import { cn } from "@/lib/utils"
 import type { DoctorQueueItem } from "@/actions/doctor"
 import { EXPOSURE_FLAGS, ASSOCIATED_SYMPTOMS } from "@/lib/constants"
 
+// Claims expire after 15 minutes (must match server)
+const CLAIM_EXPIRY_MS = 15 * 60 * 1000
+
+type QueueItemState = "selected" | "claimed-by-other" | "available" | "disabled"
+
+function isClaimExpired(claimedAt: Date | null): boolean {
+  if (!claimedAt) return true
+  const expiryThreshold = new Date(Date.now() - CLAIM_EXPIRY_MS)
+  return new Date(claimedAt) <= expiryThreshold
+}
+
+function getItemState(
+  item: DoctorQueueItem,
+  index: number,
+  waitingItems: DoctorQueueItem[],
+  currentUserId: string
+): QueueItemState {
+  // Guard: If currentUserId is not set yet, disable all items
+  if (!currentUserId) {
+    return "disabled"
+  }
+
+  // Check if current user has already claimed any patient in the waiting list
+  const currentUserHasClaim = waitingItems.some(
+    (i) => i.claimedById === currentUserId && !isClaimExpired(i.claimedAt)
+  )
+
+  // If claimed by current user, it's selected
+  if (item.claimedById === currentUserId && !isClaimExpired(item.claimedAt)) {
+    return "selected"
+  }
+
+  // If current user has a claim elsewhere, all other patients are disabled
+  // User must complete their current consultation before selecting another
+  if (currentUserHasClaim) {
+    return "disabled"
+  }
+
+  // If claimed by another user and claim is not expired
+  if (item.claimedById && !isClaimExpired(item.claimedAt)) {
+    return "claimed-by-other"
+  }
+
+  // Find the first unclaimed (or expired claim) item - FIFO order
+  const firstAvailableIndex = waitingItems.findIndex(
+    (i) => !i.claimedById || isClaimExpired(i.claimedAt)
+  )
+
+  // FIFO: Only the first available item can be selected
+  if (index === firstAvailableIndex) {
+    return "available"
+  }
+
+  // All other items are disabled - user cannot skip the queue
+  return "disabled"
+}
+
 interface DoctorQueueProps {
   queue: DoctorQueueItem[]
   isLoading: boolean
   selectedEncounterId: string | null
+  currentUserId: string
   onSelectEncounter: (encounterId: string) => void
-  onStartConsultation: (encounterId: string) => void
+  onClaimEncounter: (encounterId: string) => void
   onRefresh: () => void
 }
 
@@ -21,8 +79,9 @@ export function DoctorQueue({
   queue,
   isLoading,
   selectedEncounterId,
+  currentUserId,
   onSelectEncounter,
-  onStartConsultation,
+  onClaimEncounter,
   onRefresh,
 }: DoctorQueueProps) {
   const waitingPatients = queue.filter((q) => q.status === "WAIT_DOCTOR")
@@ -57,6 +116,7 @@ export function DoctorQueue({
                   item={item}
                   isSelected={selectedEncounterId === item.id}
                   isActive
+                  state="selected"
                   onClick={() => onSelectEncounter(item.id)}
                 />
               ))}
@@ -75,14 +135,24 @@ export function DoctorQueue({
             </div>
           ) : (
             <div className="divide-y">
-              {waitingPatients.map((item) => (
-                <QueueCard
-                  key={item.id}
-                  item={item}
-                  isSelected={selectedEncounterId === item.id}
-                  onClick={() => onStartConsultation(item.id)}
-                />
-              ))}
+              {waitingPatients.map((item, index) => {
+                const state = getItemState(item, index, waitingPatients, currentUserId)
+                return (
+                  <QueueCard
+                    key={item.id}
+                    item={item}
+                    isSelected={selectedEncounterId === item.id}
+                    state={state}
+                    onClick={() => {
+                      if (state === "available") {
+                        onClaimEncounter(item.id)
+                      } else if (state === "selected") {
+                        onSelectEncounter(item.id)
+                      }
+                    }}
+                  />
+                )
+              })}
             </div>
           )}
         </div>
@@ -95,6 +165,7 @@ interface QueueCardProps {
   item: DoctorQueueItem
   isSelected: boolean
   isActive?: boolean
+  state: QueueItemState
   onClick: () => void
 }
 
@@ -109,7 +180,7 @@ function calculateAge(birthDate: Date): number {
   return age
 }
 
-function QueueCard({ item, isSelected, isActive, onClick }: QueueCardProps) {
+function QueueCard({ item, isSelected, isActive, state, onClick }: QueueCardProps) {
   const { patient, triageRecord, chiefComplaint } = item
 
   // Calculate age
@@ -125,29 +196,74 @@ function QueueCard({ item, isSelected, isActive, onClick }: QueueCardProps) {
     ?.slice(0, 3)
     .map((s) => ASSOCIATED_SYMPTOMS.find((as) => as.value === s)?.label ?? s) ?? []
 
+  const isDisabled = state === "disabled" || state === "claimed-by-other"
+  const isClaimedByOther = state === "claimed-by-other"
+  const isMyClaim = state === "selected" && !isActive
+
   return (
     <button
+      type="button"
       className={cn(
-        "w-full px-4 py-3 text-left transition-colors hover:bg-muted/50",
+        "w-full px-4 py-3 text-left transition-colors",
+        // Available state - clickable
+        state === "available" && "hover:bg-muted/50 cursor-pointer",
+        // Selected state (my claim)
+        state === "selected" && "hover:bg-muted/50 cursor-pointer",
+        // Selected visual highlight
         isSelected && "bg-primary/5 hover:bg-primary/10",
-        isActive && "border-l-2 border-l-blue-500"
+        // Active consultation (IN_CONSULT)
+        isActive && "border-l-2 border-l-blue-500",
+        // My claim (WAIT_DOCTOR but claimed by me)
+        isMyClaim && "border-l-2 border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20",
+        // Claimed by another doctor - LOCKED
+        isClaimedByOther &&
+          "cursor-not-allowed border-l-2 border-l-amber-500 bg-amber-50/50 opacity-60 pointer-events-none dark:bg-amber-950/20",
+        // Disabled (not first in FIFO) - GREYED OUT
+        state === "disabled" && "cursor-not-allowed opacity-40 pointer-events-none"
       )}
-      onClick={onClick}
+      onClick={isDisabled ? undefined : onClick}
+      disabled={isDisabled}
+      aria-disabled={isDisabled}
     >
       {/* Patient Info */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <User className="h-4 w-4 text-muted-foreground" />
+          {isClaimedByOther ? (
+            <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          ) : (
+            <User className="h-4 w-4 text-muted-foreground" />
+          )}
           <span className="font-medium">
             {patient.lastName}, {patient.firstName}
           </span>
         </div>
-        {patient.allergyStatus === "HAS_ALLERGIES" && (
-          <Badge variant="destructive" className="text-[10px]">
-            ALLERGY
-          </Badge>
-        )}
+        <div className="flex items-center gap-1">
+          {/* Show NEXT badge for first available patient */}
+          {state === "available" && (
+            <Badge className="bg-emerald-500 text-[10px] text-white">
+              NEXT
+            </Badge>
+          )}
+          {/* Show MY CLAIM badge for claimed patient */}
+          {isMyClaim && (
+            <Badge className="bg-blue-500 text-[10px] text-white">
+              CLAIMED
+            </Badge>
+          )}
+          {patient.allergyStatus === "HAS_ALLERGIES" && (
+            <Badge variant="destructive" className="text-[10px]">
+              ALLERGY
+            </Badge>
+          )}
+        </div>
       </div>
+
+      {/* Claimed by indicator */}
+      {isClaimedByOther && item.claimedByName && (
+        <div className="mt-1 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+          <span>In progress by {item.claimedByName}</span>
+        </div>
+      )}
 
       {/* Demographics */}
       <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
