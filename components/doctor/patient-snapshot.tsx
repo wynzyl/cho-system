@@ -1,7 +1,8 @@
 "use client"
 
-import { AlertTriangle, User, Phone, Pill, Cigarette, Wine } from "lucide-react"
+import { AlertTriangle, User, Phone, Pill, Cigarette, Wine, History } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { EXPOSURE_FLAGS, getSeverityColor, type AllergySeverityValue } from "@/lib/constants"
 import type { PatientForConsult, TriageRecordForConsult } from "@/actions/doctor"
@@ -11,6 +12,7 @@ interface PatientSnapshotProps {
   patient: PatientForConsult
   triageRecord: TriageRecordForConsult | null
   chiefComplaint: string | null
+  onViewHistory?: () => void
 }
 
 function calculateAge(birthDate: Date): number {
@@ -24,7 +26,7 @@ function calculateAge(birthDate: Date): number {
   return age
 }
 
-export function PatientSnapshot({ patient, triageRecord, chiefComplaint }: PatientSnapshotProps) {
+export function PatientSnapshot({ patient, triageRecord, chiefComplaint, onViewHistory }: PatientSnapshotProps) {
   // Calculate age
   const age = calculateAge(patient.birthDate)
 
@@ -78,8 +80,20 @@ export function PatientSnapshot({ patient, triageRecord, chiefComplaint }: Patie
           )}
         </div>
 
-        {/* Lifestyle indicators */}
+        {/* History button + Lifestyle indicators */}
         <div className="flex items-center gap-2">
+          {onViewHistory && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onViewHistory}
+              className="gap-1.5 text-xs h-7"
+            >
+              <History className="h-3.5 w-3.5" />
+              View History
+            </Button>
+          )}
           {patient.isSmoker && (
             <Badge variant="outline" className="gap-1 text-orange-600">
               <Cigarette className="h-3 w-3" />

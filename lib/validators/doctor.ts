@@ -189,6 +189,19 @@ export const addLabOrderSchema = z.strictObject({
 })
 
 // =============================================================================
+// PATIENT HISTORY ACTIONS
+// =============================================================================
+
+export const getPatientHistorySchema = z.strictObject({
+  patientId: z.uuid("Invalid patient ID"),
+  limit: z.number().int().min(1).max(100).default(20),
+})
+
+export const getEncounterDetailsSchema = z.strictObject({
+  encounterId: z.uuid("Invalid encounter ID"),
+})
+
+// =============================================================================
 // TYPE EXPORTS
 // =============================================================================
 
@@ -201,3 +214,5 @@ export type AddDiagnosisInput = z.infer<typeof addDiagnosisSchema>
 export type RemoveDiagnosisInput = z.infer<typeof removeDiagnosisSchema>
 export type AddPrescriptionInput = z.infer<typeof addPrescriptionSchema>
 export type AddLabOrderInput = z.infer<typeof addLabOrderSchema>
+export type GetPatientHistoryInput = z.infer<typeof getPatientHistorySchema>
+export type GetEncounterDetailsInput = z.infer<typeof getEncounterDetailsSchema>

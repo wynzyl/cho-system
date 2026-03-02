@@ -29,13 +29,38 @@ export function formatSex(sex: string): string {
 }
 
 /**
- * Format ISO date string to localized time (e.g., "10:30 AM")
+ * Format date to localized time (e.g., "10:30 AM")
  */
-export function formatTime(isoString: string): string {
-  return new Date(isoString).toLocaleTimeString("en-US", {
+export function formatTime(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date
+  return d.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
+  })
+}
+
+/**
+ * Format date to localized date string (e.g., "Jan 15, 2024")
+ */
+export function formatDate(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date
+  return d.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
+/**
+ * Format date to short format (e.g., "Jan 15, 24")
+ */
+export function formatDateShort(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date
+  return d.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "2-digit",
   })
 }
 
