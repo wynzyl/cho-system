@@ -44,8 +44,9 @@ export function DoctorPageClient() {
       if (result.ok) {
         setEncounter(result.data)
       }
-    } catch {
-      // Silent fail on refetch
+    } catch (error) {
+      // Log but don't show toast - refetch failures are non-critical
+      console.error("Failed to refetch encounter:", error)
     }
   }, [selectedEncounterId])
 

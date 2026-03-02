@@ -233,6 +233,18 @@ export async function getEncounterForConsultAction(input: {
     }
   }
 
+  // For IN_CONSULT encounters, verify the current user is the assigned doctor (unless ADMIN)
+  const isAdmin = session.role === "ADMIN"
+  if (encounter.status === "IN_CONSULT" && !isAdmin && encounter.doctorId !== session.userId) {
+    return {
+      ok: false,
+      error: {
+        code: "FORBIDDEN",
+        message: "This consultation is assigned to another doctor",
+      },
+    }
+  }
+
   // Transform to match interface (handle Decimal types)
   const result: EncounterForConsult = {
     id: encounter.id,

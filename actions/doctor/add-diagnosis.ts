@@ -31,13 +31,15 @@ export async function addDiagnosisAction(
   if (!validation.ok) return validation.result
   const data = validation.data
 
-  // Verify encounter exists and is in IN_CONSULT status with this doctor
+  // Verify encounter exists and is in IN_CONSULT status
+  const isAdmin = session.role === "ADMIN"
   const encounter = await db.encounter.findFirst({
     where: {
       id: data.encounterId,
       facilityId: session.facilityId,
       status: "IN_CONSULT",
-      doctorId: session.userId,
+      // ADMIN can add diagnosis to any encounter, regular doctors only their own
+      ...(isAdmin ? {} : { doctorId: session.userId }),
       deletedAt: null,
     },
     include: {
