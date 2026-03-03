@@ -91,6 +91,7 @@ export async function submitTriageAction(
     })
 
     // Update Encounter status to WAIT_DOCTOR (ready for doctor consultation)
+    // Clear claim fields so the patient enters doctor queue unclaimed
     await tx.encounter.update({
       where: { id: data.encounterId },
       data: {
@@ -98,6 +99,8 @@ export async function submitTriageAction(
         triageById: session.userId,
         chiefComplaint: data.chiefComplaint ?? encounter.chiefComplaint,
         triageNotes: data.triageNotes ?? null,
+        claimedById: null,
+        claimedAt: null,
       },
     })
 

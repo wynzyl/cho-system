@@ -33,6 +33,7 @@ export async function claimForConsultAction(input: {
           id: true,
           claimedById: true,
           claimedAt: true,
+          occurredAt: true,
         },
       })
 
@@ -48,6 +49,34 @@ export async function claimForConsultAction(input: {
         encounter.claimedAt > expiryThreshold
       ) {
         throw new Error("ALREADY_CLAIMED")
+      }
+
+      // Get today's date range (must match get-doctor-queue.ts)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+
+      // FIFO enforcement: verify no earlier unclaimed patients exist TODAY
+      const earlierUnclaimed = await tx.encounter.findFirst({
+        where: {
+          facilityId: session.facilityId,
+          status: "WAIT_DOCTOR",
+          deletedAt: null,
+          occurredAt: {
+            gte: today,           // Only check today's encounters
+            lt: encounter.occurredAt,
+          },
+          OR: [
+            { claimedById: null },
+            { claimedAt: { lte: expiryThreshold } },
+          ],
+        },
+        select: { id: true },
+      })
+
+      if (earlierUnclaimed) {
+        throw new Error("FIFO_VIOLATION")
       }
 
       // Claim the encounter
@@ -78,6 +107,15 @@ export async function claimForConsultAction(input: {
           error: {
             code: "ALREADY_CLAIMED",
             message: "This patient is already being reviewed by another doctor",
+          },
+        }
+      }
+      if (error.message === "FIFO_VIOLATION") {
+        return {
+          ok: false,
+          error: {
+            code: "FIFO_VIOLATION",
+            message: "You must select the first patient in the queue",
           },
         }
       }

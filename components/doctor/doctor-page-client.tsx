@@ -21,6 +21,7 @@ export function DoctorPageClient() {
   const [encounter, setEncounter] = useState<EncounterForConsult | null>(null)
   const [isLoadingQueue, setIsLoadingQueue] = useState(true)
   const [isLoadingEncounter, setIsLoadingEncounter] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   // Track currently claimed encounter for cleanup
   const claimedEncounterIdRef = useRef<string | null>(null)
@@ -98,30 +99,8 @@ export function DoctorPageClient() {
     }
   }, [])
 
-  // Handle claiming a patient (FIFO)
-  const handleClaimEncounter = async (encounterId: string) => {
-    // Release any existing claim first
-    if (claimedEncounterIdRef.current && claimedEncounterIdRef.current !== encounterId) {
-      await releaseClaim(claimedEncounterIdRef.current)
-      claimedEncounterIdRef.current = null
-    }
-
-    try {
-      const result = await claimForConsultAction({ encounterId })
-      if (result.ok) {
-        claimedEncounterIdRef.current = encounterId
-        toast.success("Patient claimed - ready to start consultation")
-        await fetchQueue()
-      } else {
-        toast.error(result.error.message)
-      }
-    } catch {
-      toast.error("Failed to claim patient")
-    }
-  }
-
   // Handle starting consultation (after claiming)
-  const handleStartConsultation = async (encounterId: string) => {
+  const handleStartConsultation = useCallback(async (encounterId: string) => {
     try {
       const result = await startConsultationAction({ encounterId })
       if (result.ok) {
@@ -129,17 +108,64 @@ export function DoctorPageClient() {
         claimedEncounterIdRef.current = null
         toast.success("Consultation started")
         setSelectedEncounterId(encounterId)
+        setRefreshKey((k) => k + 1)
         await fetchQueue()
+      } else {
+        // Rollback: release the claim on failure
+        await releaseClaim(encounterId)
+        claimedEncounterIdRef.current = null
+        await fetchQueue()
+        toast.error(result.error.message)
+      }
+    } catch (error) {
+      // Rollback: release the claim on exception
+      await releaseClaim(encounterId)
+      claimedEncounterIdRef.current = null
+      await fetchQueue()
+      const message = error instanceof Error ? error.message : "Failed to start consultation"
+      toast.error(message)
+    }
+  }, [fetchQueue, releaseClaim])
+
+  // Handle claiming a patient (FIFO) - chains to start consultation for single-click UX
+  const handleClaimEncounter = useCallback(async (encounterId: string) => {
+    // Release any existing claim first - must succeed before proceeding
+    if (claimedEncounterIdRef.current && claimedEncounterIdRef.current !== encounterId) {
+      try {
+        const releaseResult = await releaseFromConsultAction({
+          encounterId: claimedEncounterIdRef.current,
+        })
+        if (!releaseResult.ok) {
+          toast.error("Failed to release current patient: " + releaseResult.error.message)
+          await fetchQueue()
+          return
+        }
+        claimedEncounterIdRef.current = null
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error"
+        toast.error("Failed to release current patient: " + message)
+        await fetchQueue()
+        return
+      }
+    }
+
+    try {
+      const result = await claimForConsultAction({ encounterId })
+      if (result.ok) {
+        claimedEncounterIdRef.current = encounterId
+        setRefreshKey((k) => k + 1)
+        // Chain to start consultation immediately (single-click UX like triage)
+        await handleStartConsultation(encounterId)
       } else {
         toast.error(result.error.message)
       }
     } catch {
-      toast.error("Failed to start consultation")
+      toast.error("Failed to claim patient")
     }
-  }
+  }, [fetchQueue, handleStartConsultation])
 
   // Handle selecting an existing consultation (IN_CONSULT or claimed)
-  const handleSelectEncounter = async (encounterId: string) => {
+  const handleSelectEncounter = useCallback(async (encounterId: string) => {
     // Check if this is a claimed WAIT_DOCTOR encounter
     const queueItem = queue.find((q) => q.id === encounterId)
     if (queueItem?.status === "WAIT_DOCTOR" && queueItem.claimedById === currentUserId) {
@@ -149,7 +175,7 @@ export function DoctorPageClient() {
       // This is an IN_CONSULT encounter - just select it
       setSelectedEncounterId(encounterId)
     }
-  }
+  }, [queue, currentUserId, handleStartConsultation])
 
   // Handle consultation complete
   const handleConsultationComplete = async () => {
@@ -178,6 +204,7 @@ export function DoctorPageClient() {
           isLoading={isLoadingQueue}
           selectedEncounterId={selectedEncounterId}
           currentUserId={currentUserId}
+          refreshKey={refreshKey}
           onSelectEncounter={handleSelectEncounter}
           onClaimEncounter={handleClaimEncounter}
           onRefresh={fetchQueue}

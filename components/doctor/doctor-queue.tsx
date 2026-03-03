@@ -2,7 +2,6 @@
 
 import { RefreshCw, User, Clock, AlertTriangle, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { DoctorQueueItem } from "@/actions/doctor"
@@ -70,6 +69,7 @@ interface DoctorQueueProps {
   isLoading: boolean
   selectedEncounterId: string | null
   currentUserId: string
+  refreshKey: number
   onSelectEncounter: (encounterId: string) => void
   onClaimEncounter: (encounterId: string) => void
   onRefresh: () => void
@@ -80,11 +80,19 @@ export function DoctorQueue({
   isLoading,
   selectedEncounterId,
   currentUserId,
+  refreshKey,
   onSelectEncounter,
   onClaimEncounter,
   onRefresh,
 }: DoctorQueueProps) {
-  const waitingPatients = queue.filter((q) => q.status === "WAIT_DOCTOR")
+  // refreshKey is used to force re-render when queue state changes
+  void refreshKey
+
+  // Filter and EXPLICITLY sort by occurredAt to ensure FIFO order
+  // This is critical - server may return in different order on reload
+  const waitingPatients = queue
+    .filter((q) => q.status === "WAIT_DOCTOR")
+    .sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime())
   const myConsults = queue.filter((q) => q.status === "IN_CONSULT")
 
   return (
@@ -102,7 +110,7 @@ export function DoctorQueue({
         </Button>
       </div>
 
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         {/* My Active Consultations */}
         {myConsults.length > 0 && (
           <div className="border-b">
@@ -129,7 +137,12 @@ export function DoctorQueue({
           <div className="bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
             Waiting ({waitingPatients.length})
           </div>
-          {waitingPatients.length === 0 ? (
+          {!currentUserId ? (
+            // Don't render queue items until currentUserId is loaded
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Loading queue...
+            </div>
+          ) : waitingPatients.length === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-muted-foreground">
               No patients waiting
             </div>
@@ -137,18 +150,21 @@ export function DoctorQueue({
             <div className="divide-y">
               {waitingPatients.map((item, index) => {
                 const state = getItemState(item, index, waitingPatients, currentUserId)
+                const queuePosition = index + 1
                 return (
                   <QueueCard
                     key={item.id}
                     item={item}
                     isSelected={selectedEncounterId === item.id}
                     state={state}
+                    queuePosition={queuePosition}
                     onClick={() => {
                       if (state === "available") {
                         onClaimEncounter(item.id)
                       } else if (state === "selected") {
                         onSelectEncounter(item.id)
                       }
+                      // disabled states: do nothing (button is disabled anyway)
                     }}
                   />
                 )
@@ -156,7 +172,7 @@ export function DoctorQueue({
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   )
 }
@@ -166,7 +182,8 @@ interface QueueCardProps {
   isSelected: boolean
   isActive?: boolean
   state: QueueItemState
-  onClick: () => void
+  queuePosition?: number
+  onClick?: () => void
 }
 
 function calculateAge(birthDate: Date): number {
@@ -180,7 +197,7 @@ function calculateAge(birthDate: Date): number {
   return age
 }
 
-function QueueCard({ item, isSelected, isActive, state, onClick }: QueueCardProps) {
+function QueueCard({ item, isSelected, isActive, state, queuePosition, onClick }: QueueCardProps) {
   const { patient, triageRecord, chiefComplaint } = item
 
   // Calculate age
@@ -196,9 +213,11 @@ function QueueCard({ item, isSelected, isActive, state, onClick }: QueueCardProp
     ?.slice(0, 3)
     .map((s) => ASSOCIATED_SYMPTOMS.find((as) => as.value === s)?.label ?? s) ?? []
 
-  const isDisabled = state === "disabled" || state === "claimed-by-other"
+  // Determine clickability - match triage pattern (simple delegation)
+  const isDisabled = state === "claimed-by-other" || state === "disabled"
   const isClaimedByOther = state === "claimed-by-other"
   const isMyClaim = state === "selected" && !isActive
+  const showQueuePosition = state === "disabled" && queuePosition && queuePosition > 1
 
   return (
     <button
@@ -217,9 +236,9 @@ function QueueCard({ item, isSelected, isActive, state, onClick }: QueueCardProp
         isMyClaim && "border-l-2 border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20",
         // Claimed by another doctor - LOCKED
         isClaimedByOther &&
-          "cursor-not-allowed border-l-2 border-l-amber-500 bg-amber-50/50 opacity-60 pointer-events-none dark:bg-amber-950/20",
-        // Disabled (not first in FIFO) - GREYED OUT
-        state === "disabled" && "cursor-not-allowed opacity-40 pointer-events-none"
+          "cursor-not-allowed border-l-2 border-l-amber-500 bg-amber-50/50 opacity-60 dark:bg-amber-950/20",
+        // Disabled (not first in FIFO) - GREYED OUT with clear visual indicator
+        state === "disabled" && "cursor-not-allowed opacity-40 bg-muted/20"
       )}
       onClick={isDisabled ? undefined : onClick}
       disabled={isDisabled}
@@ -248,6 +267,12 @@ function QueueCard({ item, isSelected, isActive, state, onClick }: QueueCardProp
           {isMyClaim && (
             <Badge className="bg-blue-500 text-[10px] text-white">
               CLAIMED
+            </Badge>
+          )}
+          {/* Show queue position for non-first patients (FIFO indicator) */}
+          {showQueuePosition && (
+            <Badge variant="secondary" className="text-[10px] text-muted-foreground">
+              #{queuePosition} in queue
             </Badge>
           )}
           {patient.allergyStatus === "HAS_ALLERGIES" && (

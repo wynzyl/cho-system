@@ -120,6 +120,14 @@ async function main() {
         isActive: true,
       },
       {
+        name: "Dr. Cruz",
+        email: "doctor2.main@cho.local",
+        passwordHash: defaultPasswordHash,
+        role: "DOCTOR",
+        facilityId: mainFacility.id,
+        isActive: true,
+      },
+      {
         name: "Dr. Reyes",
         email: "doctor.brgy1@cho.local",
         passwordHash: defaultPasswordHash,
