@@ -137,14 +137,14 @@ export function DoctorQueue({
           <div className="bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
             Waiting ({waitingPatients.length})
           </div>
-          {waitingPatients.length === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-              No patients waiting
-            </div>
-          ) : !currentUserId ? (
+          {!currentUserId ? (
             // Don't render queue items until currentUserId is loaded
             <div className="px-4 py-8 text-center text-sm text-muted-foreground">
               Loading queue...
+            </div>
+          ) : waitingPatients.length === 0 ? (
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+              No patients waiting
             </div>
           ) : (
             <div className="divide-y">

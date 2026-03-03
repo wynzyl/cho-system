@@ -111,19 +111,42 @@ export function DoctorPageClient() {
         setRefreshKey((k) => k + 1)
         await fetchQueue()
       } else {
+        // Rollback: release the claim on failure
+        await releaseClaim(encounterId)
+        claimedEncounterIdRef.current = null
+        await fetchQueue()
         toast.error(result.error.message)
       }
-    } catch {
-      toast.error("Failed to start consultation")
+    } catch (error) {
+      // Rollback: release the claim on exception
+      await releaseClaim(encounterId)
+      claimedEncounterIdRef.current = null
+      await fetchQueue()
+      const message = error instanceof Error ? error.message : "Failed to start consultation"
+      toast.error(message)
     }
-  }, [fetchQueue])
+  }, [fetchQueue, releaseClaim])
 
   // Handle claiming a patient (FIFO) - chains to start consultation for single-click UX
   const handleClaimEncounter = useCallback(async (encounterId: string) => {
-    // Release any existing claim first
+    // Release any existing claim first - must succeed before proceeding
     if (claimedEncounterIdRef.current && claimedEncounterIdRef.current !== encounterId) {
-      await releaseClaim(claimedEncounterIdRef.current)
-      claimedEncounterIdRef.current = null
+      try {
+        const releaseResult = await releaseFromConsultAction({
+          encounterId: claimedEncounterIdRef.current,
+        })
+        if (!releaseResult.ok) {
+          toast.error("Failed to release current patient: " + releaseResult.error.message)
+          await fetchQueue()
+          return
+        }
+        claimedEncounterIdRef.current = null
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error"
+        toast.error("Failed to release current patient: " + message)
+        await fetchQueue()
+        return
+      }
     }
 
     try {
@@ -139,7 +162,7 @@ export function DoctorPageClient() {
     } catch {
       toast.error("Failed to claim patient")
     }
-  }, [releaseClaim, handleStartConsultation])
+  }, [fetchQueue, handleStartConsultation])
 
   // Handle selecting an existing consultation (IN_CONSULT or claimed)
   const handleSelectEncounter = useCallback(async (encounterId: string) => {
