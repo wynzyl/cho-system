@@ -1,6 +1,6 @@
 # CHO System - Project Status
 
-**Last Updated:** February 24, 2026
+**Last Updated:** March 4, 2026
 
 ## Overview
 
@@ -61,10 +61,23 @@ CHO (City Health Office) System is a medical records and clinic management syste
 | Feature                    | Status | Notes                                           |
 | -------------------------- | ------ | ----------------------------------------------- |
 | Triage queue               | Done   | Today's patients with WAIT_TRIAGE status        |
+| FIFO claiming system       | Done   | One patient per nurse, prevents queue jumping   |
 | Vitals form                | Done   | BP, HR, RR, Temp, SpO2, Weight, Height          |
 | Chief complaint            | Done   | Text field in encounter                         |
 | Submit triage              | Done   | Creates TriageRecord, updates status to TRIAGED |
 | Quick patient registration | Done   | Register + forward to triage in one action      |
+| Allergy management         | Done   | Add/edit/remove allergies, confirm NKA status   |
+
+
+#### 2.5 Allergy Module (Cross-Module)
+
+
+| Feature                    | Status | Notes                                           |
+| -------------------------- | ------ | ----------------------------------------------- |
+| Patient allergy tracking   | Done   | Track allergies with severity levels            |
+| Allergy banner             | Done   | Prominent display on patient views              |
+| NKA confirmation           | Done   | Explicit "No Known Allergies" confirmation      |
+| Severity levels            | Done   | Supports mild, moderate, severe classifications |
 
 
 #### 3. Doctor Consultation (DOCTOR role)
@@ -72,7 +85,8 @@ CHO (City Health Office) System is a medical records and clinic management syste
 
 | Feature              | Status      | Notes                                    |
 | -------------------- | ----------- | ---------------------------------------- |
-| Appointments page    | Partial     | Route exists, needs queue implementation |
+| Appointments page    | Done        | FIFO queue with claim/rollback system    |
+| FIFO claiming system | Done        | One patient per doctor, prevents jumping |
 | Patient summary view | Not Started | Triage vitals display                    |
 | Diagnosis entry      | Partial     | Taxonomy backend done, UI not started    |
 | Lab orders           | Not Started | LabOrder model exists                    |
@@ -115,9 +129,25 @@ CHO (City Health Office) System is a medical records and clinic management syste
 
 ---
 
-## Recently Completed (February 23, 2026)
+## Recently Completed
 
-### Diagnosis Taxonomy System
+### March 2026
+
+#### FIFO Queue System for Doctor Appointments
+- Implemented FIFO claiming system for doctor appointments
+- Claim/rollback mechanism to prevent queue jumping
+- One patient per doctor at a time
+- Bug fixes for FIFO edge cases (PR #24)
+
+#### Allergy Module
+- Patient allergy tracking with severity levels (mild, moderate, severe)
+- Allergy banner prominently displayed on patient views
+- NKA (No Known Allergies) explicit confirmation workflow
+- Allergy management integrated into triage workflow
+
+### February 2026
+
+#### Diagnosis Taxonomy System
 
 Implemented a 3-layer diagnosis taxonomy with ICD-10 mapping:
 

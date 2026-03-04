@@ -1,6 +1,6 @@
 # CHO System - Project Roadmap
 
-**Last Updated:** February 24, 2026
+**Last Updated:** March 4, 2026
 
 ---
 
@@ -45,9 +45,15 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
   - [x] Forward to triage
 - [x] Triage module
   - [x] Triage queue (today's WAIT_TRIAGE)
+  - [x] FIFO claiming system (one patient per nurse)
   - [x] Vitals form (BP, HR, RR, Temp, SpO2, Weight, Height)
   - [x] Submit triage → status TRIAGED
   - [x] Quick patient registration
+  - [x] Allergy management (add/edit/remove, NKA confirmation)
+- [x] Allergy module
+  - [x] Patient allergy tracking with severity levels
+  - [x] Allergy banner on patient views
+  - [x] NKA (No Known Allergies) confirmation workflow
 - [x] Barangay reference data (34 Urdaneta barangays)
 - [x] Diagnosis taxonomy (10 categories, 86 subcategories, 148 ICD-10 codes)
 
@@ -58,10 +64,11 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 ### Priority: Complete Doctor Workflow
 
 #### 2.1 Appointments Queue
-- [ ] Show TRIAGED encounters assigned to logged-in doctor
-- [ ] Filter by date (Today / Upcoming / Completed)
-- [ ] Encounter status badges
-- [ ] Click to open consultation
+- [x] Show TRIAGED encounters assigned to logged-in doctor
+- [x] Filter by date (Today / Upcoming / Completed)
+- [x] Encounter status badges
+- [x] FIFO claiming system with claim/rollback
+- [ ] Click to open consultation view
 
 #### 2.2 Consultation View
 - [ ] Patient summary panel (demographics, history)
@@ -259,12 +266,16 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 
 **Sprint Goal:** Complete Doctor Consultation Module
 
-### This Sprint
-1. Appointments queue with filtering
-2. Consultation view with patient summary
-3. Diagnosis picker component (using taxonomy)
-4. Lab order creation form
-5. Prescription creation form
+### Completed This Sprint
+1. ~~Appointments queue with filtering~~ ✅
+2. ~~FIFO claiming system for doctor appointments~~ ✅
+3. ~~Allergy module (tracking, banner, NKA)~~ ✅
+
+### Remaining This Sprint
+1. Consultation view with patient summary
+2. Diagnosis picker component (using taxonomy)
+3. Lab order creation form
+4. Prescription creation form
 
 ### Next Sprint
 1. Lab module - queue and processing
@@ -275,14 +286,15 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 
 ## Technical Priorities
 
-| Priority | Item | Reason |
-|----------|------|--------|
-| High | Doctor consultation UI | Unblocks full workflow |
-| High | Diagnosis picker component | Taxonomy is ready |
-| Medium | Lab order form | Enables lab workflow |
-| Medium | Prescription form | Enables pharmacy workflow |
-| Low | Dashboard KPIs | Admin convenience |
-| Low | Reports | Can use direct DB queries initially |
+| Priority | Item | Reason | Status |
+|----------|------|--------|--------|
+| High | Doctor appointments queue | Enables doctor workflow | ✅ Done |
+| High | Doctor consultation UI | Unblocks full workflow | In Progress |
+| High | Diagnosis picker component | Taxonomy is ready | Not Started |
+| Medium | Lab order form | Enables lab workflow | Not Started |
+| Medium | Prescription form | Enables pharmacy workflow | Not Started |
+| Low | Dashboard KPIs | Admin convenience | Not Started |
+| Low | Reports | Can use direct DB queries initially | Not Started |
 
 ---
 
@@ -305,9 +317,10 @@ graph LR
 ## Success Metrics (MVP)
 
 - [ ] Complete patient flow from registration to done
-- [ ] Multi-facility operation verified
+- [x] Multi-facility operation verified
 - [ ] Lab orders flow to MAIN and back
 - [ ] Inventory deduction accurate
-- [ ] Audit trail complete for all actions
-- [ ] No data loss on soft deletes
-- [ ] Role permissions enforced correctly
+- [x] Audit trail complete for all actions
+- [x] No data loss on soft deletes
+- [x] Role permissions enforced correctly
+- [x] FIFO queue enforcement (triage and doctor)
