@@ -83,3 +83,19 @@ export type {
   MedicalConditionCode,
   FamilyHistoryKey,
 } from "./consultation"
+
+// User management constants
+export {
+  ROLE_OPTIONS,
+  USER_SCOPE_OPTIONS,
+  USER_STATUS_OPTIONS,
+  getRoleLabel,
+  getScopeLabel,
+  getRoleBadgeColor,
+  getScopeBadgeColor,
+} from "./users"
+export type {
+  RoleValue,
+  UserScopeValue,
+  UserStatusFilterValue,
+} from "./users"
