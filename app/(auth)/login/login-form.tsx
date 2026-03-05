@@ -33,7 +33,6 @@ export function LoginForm() {
 
       if (result.ok) {
         router.push(result.data.redirectTo)
-        router.refresh()
       } else {
         // Handle server-side field validation errors
         if (result.error.code === "VALIDATION_ERROR" && result.error.fieldErrors) {

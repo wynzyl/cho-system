@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { getSession } from "./session"
 import { SessionUser } from "./types"
 import { Role } from "@prisma/client"
+import { db } from "@/lib/db"
 
 export type AuthErrorCode = "UNAUTHORIZED" | "FORBIDDEN"
 
@@ -24,6 +25,17 @@ export async function requireSession(): Promise<SessionUser> {
   if (!session) {
     redirect("/login")
   }
+
+  // Verify the session user still exists and is active in the database.
+  // Catches stale JWTs after a DB reseed or account deactivation.
+  const dbUser = await db.user.findFirst({
+    where: { id: session.userId, deletedAt: null, isActive: true },
+    select: { id: true },
+  })
+  if (!dbUser) {
+    redirect("/login")
+  }
+
   return session
 }
 
@@ -47,6 +59,17 @@ export async function requireSessionForAction(): Promise<SessionUser> {
   if (!session) {
     throw new AuthError("UNAUTHORIZED")
   }
+
+  // Verify the session user still exists and is active in the database.
+  // Catches stale JWTs after a DB reseed or account deactivation.
+  const dbUser = await db.user.findFirst({
+    where: { id: session.userId, deletedAt: null, isActive: true },
+    select: { id: true },
+  })
+  if (!dbUser) {
+    throw new AuthError("UNAUTHORIZED")
+  }
+
   return session
 }
 
