@@ -20,11 +20,13 @@ export async function createUserAction(
   if (!validation.ok) return validation.result
   const data = validation.data
 
+  const normalizedEmail = data.email.toLowerCase().trim()
+
   const result = await db.$transaction(async (tx) => {
     // Check email uniqueness (case-insensitive)
     const existing = await tx.user.findFirst({
       where: {
-        email: data.email.toLowerCase(),
+        email: normalizedEmail,
         deletedAt: null,
       },
       select: { id: true },
@@ -48,7 +50,7 @@ export async function createUserAction(
     const user = await tx.user.create({
       data: {
         name: data.name.trim(),
-        email: data.email.toLowerCase().trim(),
+        email: normalizedEmail,
         passwordHash,
         role: data.role,
         facilityId: data.facilityId,
@@ -68,7 +70,7 @@ export async function createUserAction(
         entityId: user.id,
         metadata: {
           name: data.name,
-          email: data.email.toLowerCase(),
+          email: normalizedEmail,
           role: data.role,
           scope: data.scope,
         },
