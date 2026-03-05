@@ -18,7 +18,8 @@
       "Bash(ping:*)",
       "Bash(curl:*)",
       "Bash(echo:*)",
-      "Bash(ls -la \"E:\\\\Projects\\\\CHO\\\\cho-system\\\\app\\\\\\(dashboards\\)\"\" 2>/dev/null || find \"E:ProjectsCHOcho-systemapp \" -maxdepth 2 -type d)"
+      "Bash(ls -la \"E:\\\\Projects\\\\CHO\\\\cho-system\\\\app\\\\\\(dashboards\\)\"\" 2>/dev/null || find \"E:ProjectsCHOcho-systemapp \" -maxdepth 2 -type d)",
+      "Bash(npx prisma:*)"
     ]
   }
 }
