@@ -64,7 +64,7 @@ async function main() {
   const barangay1 = await prisma.facility.create({
     data: {
       code: "CHO-BRG1",
-      name: "CHO1 - Barangay Branch",
+      name: "CHO1 - Barangay Branch1",
       type: "BARANGAY",
       address: "Barangay 1",
       isActive: true,
@@ -74,7 +74,7 @@ async function main() {
   const barangay2 = await prisma.facility.create({
     data: {
       code: "CHO-BRG2",
-      name: "CHO2 - Barangay Branch",
+      name: "CHO2 - Barangay Branch2",
       type: "BARANGAY",
       address: "Barangay 2",
       isActive: true,
@@ -135,6 +135,30 @@ async function main() {
         facilityId: barangay1.id,
         isActive: true,
       },
+      {
+        name: "Dr. Villanueva",
+        email: "doctor2.brgy1@cho.local",
+        passwordHash: defaultPasswordHash,
+        role: "DOCTOR",
+        facilityId: barangay1.id,
+        isActive: true,
+      },
+      {
+        name: "Dr. Quezon",
+        email: "doctor.brgy2@cho.local",
+        passwordHash: defaultPasswordHash,
+        role: "DOCTOR",
+        facilityId: barangay2.id,
+        isActive: true,
+      },
+      {
+        name: "Dr. Quijano",
+        email: "doctor2.brgy2@cho.local",
+        passwordHash: defaultPasswordHash,
+        role: "DOCTOR",
+        facilityId: barangay2.id,
+        isActive: true,
+      },
     ],
   })
 
@@ -150,8 +174,24 @@ async function main() {
         isActive: true,
       },
       {
+        name: "Nurse Jose",
+        email: "triage2.main@cho.local",
+        passwordHash: defaultPasswordHash,
+        role: "TRIAGE",
+        facilityId: mainFacility.id,
+        isActive: true,
+      },
+      {
         name: "Nurse Ana",
         email: "triage.brgy2@cho.local",
+        passwordHash: defaultPasswordHash,
+        role: "TRIAGE",
+        facilityId: barangay2.id,
+        isActive: true,
+      },
+      {
+        name: "Nurse Arnold",
+        email: "triage2.brgy2@cho.local",
         passwordHash: defaultPasswordHash,
         role: "TRIAGE",
         facilityId: barangay2.id,
