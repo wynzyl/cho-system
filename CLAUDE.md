@@ -172,5 +172,5 @@ enforcement is mandatory from Day 1.
 
 #  Multi-Facility and User Role Rules
 - REGISTRATION - In the Multi-facility Patients can register in any facility.
-- TRIAGE - if the patient is already has an encounter to a facility in that day, it should restrict another encounter in other facilties. But a patient can make encounter to any facilty in a day if there is no existing encounter. 
+- TRIAGE - if the patient is already has an encounter to a facility in that day, it should restrict another encounter in other facilties. But a patient can make encounter to any facility in a day if there is no existing encounter. 
 
