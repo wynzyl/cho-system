@@ -62,7 +62,7 @@ export async function proxy(request: NextRequest) {
 
     return NextResponse.next()
   } catch {
-    // Invalid or expired token
+    // Invalid or expired token — clear the cookie so /login won't redirect back
     const response = NextResponse.redirect(new URL("/login", request.url))
     response.cookies.delete(SESSION_COOKIE_NAME)
     return response
