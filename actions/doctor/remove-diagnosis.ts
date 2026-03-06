@@ -5,6 +5,7 @@ import { requireRoleForAction } from "@/lib/auth/guards"
 import { removeDiagnosisSchema, type RemoveDiagnosisInput } from "@/lib/validators/doctor"
 import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
+import { notFoundError, forbiddenError, createAuditLog } from "@/lib/utils/action-helpers"
 
 export async function removeDiagnosisAction(
   input: RemoveDiagnosisInput
@@ -39,13 +40,7 @@ export async function removeDiagnosisAction(
   })
 
   if (!diagnosis) {
-    return {
-      ok: false,
-      error: {
-        code: "NOT_FOUND",
-        message: "Diagnosis not found",
-      },
-    }
+    return notFoundError("Diagnosis")
   }
 
   // Verify encounter is in IN_CONSULT and this doctor owns it (ADMIN can bypass)
@@ -56,13 +51,7 @@ export async function removeDiagnosisAction(
     diagnosis.encounter.facilityId !== session.facilityId ||
     (!isAdmin && !isAssignedDoctor)
   ) {
-    return {
-      ok: false,
-      error: {
-        code: "FORBIDDEN",
-        message: "Cannot remove diagnosis from this encounter",
-      },
-    }
+    return forbiddenError("Cannot remove diagnosis from this encounter")
   }
 
   await db.$transaction(async (tx) => {
@@ -76,19 +65,10 @@ export async function removeDiagnosisAction(
     })
 
     // Create audit log
-    await tx.auditLog.create({
-      data: {
-        userId: session.userId,
-        userName: session.name,
-        action: "DELETE_SOFT",
-        entity: "Diagnosis",
-        entityId: data.diagnosisId,
-        metadata: {
-          patientCode: diagnosis.encounter.patient.patientCode,
-          encounterId: diagnosis.encounter.id,
-          diagnosisText: diagnosis.text,
-        },
-      },
+    await createAuditLog(tx, session, "DELETE_SOFT", "Diagnosis", data.diagnosisId, {
+      patientCode: diagnosis.encounter.patient.patientCode,
+      encounterId: diagnosis.encounter.id,
+      diagnosisText: diagnosis.text,
     })
   })
 

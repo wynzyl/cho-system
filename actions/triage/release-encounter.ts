@@ -5,6 +5,7 @@ import { requireRoleForAction } from "@/lib/auth/guards"
 import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import { z } from "zod"
+import { notFoundError, forbiddenError } from "@/lib/utils/action-helpers"
 
 const inputSchema = z.object({
   encounterId: z.string().uuid("Invalid encounter ID"),
@@ -57,22 +58,10 @@ export async function releaseEncounterAction(
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "ENCOUNTER_NOT_FOUND") {
-        return {
-          ok: false,
-          error: {
-            code: "NOT_FOUND",
-            message: "Encounter not found",
-          },
-        }
+        return notFoundError("Encounter")
       }
       if (error.message === "NOT_CLAIM_OWNER") {
-        return {
-          ok: false,
-          error: {
-            code: "FORBIDDEN",
-            message: "You cannot release another user's claim",
-          },
-        }
+        return forbiddenError("You cannot release another user's claim")
       }
     }
     throw error

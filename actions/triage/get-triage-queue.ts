@@ -6,6 +6,7 @@ import { getTriageQueueSchema, type GetTriageQueueInput } from "@/lib/validators
 import { validateInput, calculateAge } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import type { Sex, PatientAllergyStatus, AllergySeverity } from "@prisma/client"
+import { getTodayDateRange } from "@/lib/utils/date"
 
 export type PatientAllergyInfo = {
   allergen: string
@@ -78,10 +79,7 @@ export async function getTriageQueueAction(
   if (!validation.ok) return validation.result
 
   // Get start and end of today
-  const startOfDay = new Date()
-  startOfDay.setHours(0, 0, 0, 0)
-  const endOfDay = new Date()
-  endOfDay.setHours(23, 59, 59, 999)
+  const { start: startOfDay, end: endOfDay } = getTodayDateRange()
 
   const encounters = await db.encounter.findMany({
     where: {

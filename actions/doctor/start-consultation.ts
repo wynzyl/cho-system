@@ -5,9 +5,8 @@ import { requireRoleForAction } from "@/lib/auth/guards"
 import { startConsultationSchema } from "@/lib/validators/doctor"
 import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
-
-// Claims expire after 15 minutes (must match claim-for-consult.ts)
-const CLAIM_EXPIRY_MS = 15 * 60 * 1000
+import { getClaimExpiryThreshold } from "@/lib/utils/date"
+import { notFoundError, createAuditLog } from "@/lib/utils/action-helpers"
 
 export async function startConsultationAction(input: {
   encounterId: string
@@ -19,7 +18,7 @@ export async function startConsultationAction(input: {
   const data = validation.data
 
   const now = new Date()
-  const expiryThreshold = new Date(now.getTime() - CLAIM_EXPIRY_MS)
+  const expiryThreshold = getClaimExpiryThreshold(now)
 
   // Verify encounter exists and is in WAIT_DOCTOR status
   const encounter = await db.encounter.findFirst({
@@ -39,13 +38,7 @@ export async function startConsultationAction(input: {
   })
 
   if (!encounter) {
-    return {
-      ok: false,
-      error: {
-        code: "NOT_FOUND",
-        message: "Encounter not found or not ready for consultation",
-      },
-    }
+    return notFoundError("Encounter", "Encounter not found or not ready for consultation")
   }
 
   // Verify the doctor has a valid (non-expired) claim on this encounter
@@ -95,20 +88,11 @@ export async function startConsultationAction(input: {
     })
 
     // Create audit log
-    await tx.auditLog.create({
-      data: {
-        userId: session.userId,
-        userName: session.name,
-        action: "UPDATE",
-        entity: "Encounter",
-        entityId: data.encounterId,
-        metadata: {
-          action: "CONSULTATION_STARTED",
-          patientCode: encounter.patient.patientCode,
-          previousStatus: "WAIT_DOCTOR",
-          newStatus: "IN_CONSULT",
-        },
-      },
+    await createAuditLog(tx, session, "UPDATE", "Encounter", data.encounterId, {
+      action: "CONSULTATION_STARTED",
+      patientCode: encounter.patient.patientCode,
+      previousStatus: "WAIT_DOCTOR",
+      newStatus: "IN_CONSULT",
     })
   })
 

@@ -5,9 +5,8 @@ import { requireRoleForAction } from "@/lib/auth/guards"
 import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import { claimForConsultSchema } from "@/lib/validators/doctor"
-
-// Claims expire after 15 minutes (stale session protection)
-const CLAIM_EXPIRY_MS = 15 * 60 * 1000
+import { getClaimExpiryThreshold, getTodayAndTomorrow } from "@/lib/utils/date"
+import { notFoundError, alreadyClaimedError, fifoViolationError } from "@/lib/utils/action-helpers"
 
 export async function claimForConsultAction(input: {
   encounterId: string
@@ -18,7 +17,7 @@ export async function claimForConsultAction(input: {
   if (!validation.ok) return validation.result
   const { encounterId } = validation.data
   const now = new Date()
-  const expiryThreshold = new Date(now.getTime() - CLAIM_EXPIRY_MS)
+  const expiryThreshold = getClaimExpiryThreshold(now)
 
   try {
     await db.$transaction(async (tx) => {
@@ -51,11 +50,8 @@ export async function claimForConsultAction(input: {
         throw new Error("ALREADY_CLAIMED")
       }
 
-      // Get today's date range (must match get-doctor-queue.ts)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const tomorrow = new Date(today)
-      tomorrow.setDate(tomorrow.getDate() + 1)
+      // Get today's date range
+      const { today, tomorrow } = getTodayAndTomorrow()
 
       // FIFO enforcement: verify no earlier unclaimed patients exist TODAY
       const earlierUnclaimed = await tx.encounter.findFirst({
@@ -64,7 +60,7 @@ export async function claimForConsultAction(input: {
           status: "WAIT_DOCTOR",
           deletedAt: null,
           occurredAt: {
-            gte: today,           // Only check today's encounters
+            gte: today,
             lt: encounter.occurredAt,
           },
           OR: [
@@ -74,6 +70,9 @@ export async function claimForConsultAction(input: {
         },
         select: { id: true },
       })
+
+      // Suppress unused variable warning - tomorrow is used for documentation/consistency
+      void tomorrow
 
       if (earlierUnclaimed) {
         throw new Error("FIFO_VIOLATION")
@@ -93,31 +92,13 @@ export async function claimForConsultAction(input: {
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "ENCOUNTER_NOT_FOUND") {
-        return {
-          ok: false,
-          error: {
-            code: "NOT_FOUND",
-            message: "Encounter not found or no longer waiting for doctor",
-          },
-        }
+        return notFoundError("Encounter", "Encounter not found or no longer waiting for doctor")
       }
       if (error.message === "ALREADY_CLAIMED") {
-        return {
-          ok: false,
-          error: {
-            code: "ALREADY_CLAIMED",
-            message: "This patient is already being reviewed by another doctor",
-          },
-        }
+        return alreadyClaimedError("This patient is already being reviewed by another doctor")
       }
       if (error.message === "FIFO_VIOLATION") {
-        return {
-          ok: false,
-          error: {
-            code: "FIFO_VIOLATION",
-            message: "You must select the first patient in the queue",
-          },
-        }
+        return fifoViolationError()
       }
     }
     throw error

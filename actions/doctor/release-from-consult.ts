@@ -5,6 +5,7 @@ import { requireRoleForAction } from "@/lib/auth/guards"
 import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import { releaseFromConsultSchema } from "@/lib/validators/doctor"
+import { notFoundError, forbiddenError } from "@/lib/utils/action-helpers"
 
 export async function releaseFromConsultAction(input: {
   encounterId: string
@@ -59,22 +60,10 @@ export async function releaseFromConsultAction(input: {
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "ENCOUNTER_NOT_FOUND") {
-        return {
-          ok: false,
-          error: {
-            code: "NOT_FOUND",
-            message: "Encounter not found",
-          },
-        }
+        return notFoundError("Encounter")
       }
       if (error.message === "NOT_CLAIM_OWNER") {
-        return {
-          ok: false,
-          error: {
-            code: "FORBIDDEN",
-            message: "You cannot release another doctor's claim",
-          },
-        }
+        return forbiddenError("You cannot release another doctor's claim")
       }
     }
     throw error

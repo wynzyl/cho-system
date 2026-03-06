@@ -5,15 +5,14 @@ import { requireRoleForAction } from "@/lib/auth/guards"
 import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import { z } from "zod"
+import { getClaimExpiryThreshold } from "@/lib/utils/date"
+import { notFoundError, alreadyClaimedError } from "@/lib/utils/action-helpers"
 
 const inputSchema = z.object({
   encounterId: z.string().uuid("Invalid encounter ID"),
 })
 
 type ClaimEncounterInput = z.infer<typeof inputSchema>
-
-// Claims expire after 15 minutes (stale session protection)
-const CLAIM_EXPIRY_MS = 15 * 60 * 1000
 
 export async function claimEncounterAction(
   input: ClaimEncounterInput
@@ -24,7 +23,7 @@ export async function claimEncounterAction(
   if (!validation.ok) return validation.result
   const { encounterId } = validation.data
   const now = new Date()
-  const expiryThreshold = new Date(now.getTime() - CLAIM_EXPIRY_MS)
+  const expiryThreshold = getClaimExpiryThreshold(now)
 
   try {
     await db.$transaction(async (tx) => {
@@ -70,22 +69,10 @@ export async function claimEncounterAction(
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "ENCOUNTER_NOT_FOUND") {
-        return {
-          ok: false,
-          error: {
-            code: "NOT_FOUND",
-            message: "Encounter not found or no longer waiting for triage",
-          },
-        }
+        return notFoundError("Encounter", "Encounter not found or no longer waiting for triage")
       }
       if (error.message === "ALREADY_CLAIMED") {
-        return {
-          ok: false,
-          error: {
-            code: "ALREADY_CLAIMED",
-            message: "This patient is already being processed by another user",
-          },
-        }
+        return alreadyClaimedError("This patient is already being processed by another user")
       }
     }
     throw error

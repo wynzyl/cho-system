@@ -3,6 +3,7 @@
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import type { ActionResult } from "@/lib/auth/types"
+import { getTodayAndTomorrow } from "@/lib/utils/date"
 
 export interface DoctorQueueItem {
   id: string
@@ -49,10 +50,7 @@ export async function getDoctorQueueAction(): Promise<ActionResult<DoctorQueueRe
   const session = await requireRoleForAction(["DOCTOR"])
 
   // Get today's date range
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
+  const { today, tomorrow } = getTodayAndTomorrow()
 
   // Fetch encounters that are ready for or in consultation
   // For IN_CONSULT, only show encounters assigned to current doctor (unless ADMIN)

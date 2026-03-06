@@ -5,6 +5,7 @@ import { requireRoleForAction } from "@/lib/auth/guards"
 import { addDiagnosisSchema, type AddDiagnosisInput } from "@/lib/validators/doctor"
 import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
+import { notFoundError, validationError, createAuditLog } from "@/lib/utils/action-helpers"
 
 export interface AddDiagnosisResult {
   id: string
@@ -52,13 +53,7 @@ export async function addDiagnosisAction(
   })
 
   if (!encounter) {
-    return {
-      ok: false,
-      error: {
-        code: "NOT_FOUND",
-        message: "Encounter not found or you are not the assigned doctor",
-      },
-    }
+    return notFoundError("Encounter", "Encounter not found or you are not the assigned doctor")
   }
 
   // If subcategoryId is provided, verify it exists
@@ -72,13 +67,7 @@ export async function addDiagnosisAction(
     })
 
     if (!subcategory) {
-      return {
-        ok: false,
-        error: {
-          code: "VALIDATION_ERROR",
-          message: "Invalid diagnosis subcategory",
-        },
-      }
+      return validationError("Invalid diagnosis subcategory")
     }
   }
 
@@ -108,20 +97,11 @@ export async function addDiagnosisAction(
     })
 
     // Create audit log
-    await tx.auditLog.create({
-      data: {
-        userId: session.userId,
-        userName: session.name,
-        action: "CREATE",
-        entity: "Diagnosis",
-        entityId: created.id,
-        metadata: {
-          patientCode: encounter.patient.patientCode,
-          encounterId: data.encounterId,
-          diagnosisText: data.text,
-          subcategoryId: data.subcategoryId ?? null,
-        },
-      },
+    await createAuditLog(tx, session, "CREATE", "Diagnosis", created.id, {
+      patientCode: encounter.patient.patientCode,
+      encounterId: data.encounterId,
+      diagnosisText: data.text,
+      subcategoryId: data.subcategoryId ?? null,
     })
 
     return created

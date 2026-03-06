@@ -1,4 +1,18 @@
 import { z } from "zod"
+import {
+  SEX_VALUES,
+  CIVIL_STATUS_VALUES,
+  RELIGION_VALUES,
+  EDUCATION_VALUES,
+  BLOOD_TYPE_VALUES,
+  PHILHEALTH_MEMBERSHIP_TYPE_VALUES,
+} from "@/lib/constants/enums"
+import {
+  validateEligibilityDates,
+  ELIGIBILITY_DATE_ERROR,
+  PHILHEALTH_NUMBER_REGEX,
+  PHILHEALTH_NUMBER_ERROR,
+} from "./refinements"
 
 /**
  * Client-side patient form schema
@@ -10,73 +24,30 @@ export const patientFormSchema = z
     middleName: z.string().max(100).optional(),
     lastName: z.string().min(1, "Last name is required").max(100),
     birthDate: z.string().min(1, "Birth date is required"),
-    sex: z.enum(["MALE", "FEMALE", "OTHER"], { message: "Sex is required" }),
-    civilStatus: z.enum(["SINGLE", "MARRIED", "WIDOWED", "SEPARATED", "ANNULLED"], {
-      message: "Civil status is required",
-    }),
-    religion: z.enum([
-      "ROMAN_CATHOLIC",
-      "PROTESTANT",
-      "IGLESIA_NI_CRISTO",
-      "ISLAM",
-      "BUDDHIST",
-      "OTHER",
-      "NONE",
-      "UNKNOWN",
-    ]),
-    education: z.enum([
-      "NO_FORMAL",
-      "ELEMENTARY",
-      "JUNIOR_HIGH",
-      "SENIOR_HIGH",
-      "VOCATIONAL",
-      "COLLEGE",
-      "POSTGRADUATE",
-      "UNKNOWN",
-    ]),
-    bloodType: z.enum([
-      "A_POSITIVE",
-      "A_NEGATIVE",
-      "B_POSITIVE",
-      "B_NEGATIVE",
-      "AB_POSITIVE",
-      "AB_NEGATIVE",
-      "O_POSITIVE",
-      "O_NEGATIVE",
-      "UNKNOWN",
-    ]),
+    sex: z.enum(SEX_VALUES, { message: "Sex is required" }),
+    civilStatus: z.enum(CIVIL_STATUS_VALUES, { message: "Civil status is required" }),
+    religion: z.enum(RELIGION_VALUES),
+    education: z.enum(EDUCATION_VALUES),
+    bloodType: z.enum(BLOOD_TYPE_VALUES),
     occupation: z.string().max(100).optional(),
     phone: z.string().min(1, "Phone number is required").max(20),
     philhealthNo: z
       .string()
-      .regex(/^\d{12}$/, "Must be exactly 12 digits")
+      .regex(PHILHEALTH_NUMBER_REGEX, PHILHEALTH_NUMBER_ERROR)
       .optional()
       .or(z.literal("")),
-    philhealthMembershipType: z
-      .enum(["EMPLOYED", "SELF_EMPLOYED", "INDIGENT", "OFW", "LIFETIME", "DEPENDENT", "OTHER"])
-      .optional(),
+    philhealthMembershipType: z.enum(PHILHEALTH_MEMBERSHIP_TYPE_VALUES).optional(),
     philhealthEligibilityStart: z.string().optional(),
     philhealthEligibilityEnd: z.string().optional(),
     philhealthPrincipalPin: z
       .string()
-      .regex(/^\d{12}$/, "Must be exactly 12 digits")
+      .regex(PHILHEALTH_NUMBER_REGEX, PHILHEALTH_NUMBER_ERROR)
       .optional()
       .or(z.literal("")),
     addressLine: z.string().max(255).optional(),
     barangayId: z.string().uuid("Barangay is required"),
     notes: z.string().max(1000).optional(),
   })
-  .refine(
-    (data) => {
-      if (data.philhealthEligibilityStart && data.philhealthEligibilityEnd) {
-        return new Date(data.philhealthEligibilityEnd) > new Date(data.philhealthEligibilityStart)
-      }
-      return true
-    },
-    {
-      message: "End date must be after start date",
-      path: ["philhealthEligibilityEnd"],
-    }
-  )
+  .refine(validateEligibilityDates, ELIGIBILITY_DATE_ERROR)
 
 export type PatientFormData = z.infer<typeof patientFormSchema>
