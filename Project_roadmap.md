@@ -1,6 +1,6 @@
 # CHO System - Project Roadmap
 
-**Last Updated:** March 4, 2026
+**Last Updated:** March 6, 2026
 
 ---
 
@@ -270,6 +270,7 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 1. ~~Appointments queue with filtering~~ ✅
 2. ~~FIFO claiming system for doctor appointments~~ ✅
 3. ~~Allergy module (tracking, banner, NKA)~~ ✅
+4. ~~Codebase refactoring (shared utilities, reusable components)~~ ✅
 
 ### Remaining This Sprint
 1. Consultation view with patient summary
@@ -284,6 +285,39 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 
 ---
 
+## Code Quality & Refactoring (DONE)
+
+### Completed March 6, 2026
+
+#### Shared Utilities Created
+- [x] `lib/constants/enums.ts` - Shared enum definitions for validators
+- [x] `lib/utils/date.ts` - Date range utilities (getTodayDateRange, getClaimExpiryThreshold)
+- [x] `lib/utils/action-helpers.ts` - Action result helpers (notFoundError, forbiddenError, createAuditLog)
+- [x] `lib/validators/refinements.ts` - Shared Zod refinements
+
+#### Reusable UI Components
+- [x] `components/ui/form-error-message.tsx` - FormErrorMessage, FormErrorBanner
+- [x] `components/forms/form-field-group.tsx` - FormFieldGroup, FormFieldWrapper
+- [x] `components/forms/section-header.tsx` - SectionHeader, FormSection
+
+#### Patient Form Split
+- [x] `components/forms/patient/personal-info-section.tsx` - Identity, demographics, personal info
+- [x] `components/forms/patient/contact-info-section.tsx` - Education, contact, address, notes
+- [x] `components/forms/patient/philhealth-section.tsx` - PhilHealth information
+
+#### Action Layer Cleanup
+- [x] Updated 8 action files to use shared date utilities
+- [x] Standardized error handling with helper functions
+- [x] Centralized audit logging with createAuditLog helper
+
+**Impact:**
+- ~150+ lines of duplicate code eliminated
+- 8 duplicate error patterns consolidated
+- Claim expiry logic centralized (was in 3+ files)
+- Enum definitions shared instead of duplicated
+
+---
+
 ## Technical Priorities
 
 | Priority | Item | Reason | Status |
@@ -291,6 +325,7 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 | High | Doctor appointments queue | Enables doctor workflow | ✅ Done |
 | High | Doctor consultation UI | Unblocks full workflow | In Progress |
 | High | Diagnosis picker component | Taxonomy is ready | Not Started |
+| High | Codebase refactoring | Reduce duplication, improve maintainability | ✅ Done |
 | Medium | Lab order form | Enables lab workflow | Not Started |
 | Medium | Prescription form | Enables pharmacy workflow | Not Started |
 | Low | Dashboard KPIs | Admin convenience | Not Started |
