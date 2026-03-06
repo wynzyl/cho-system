@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { createEncounterSchema, type CreateEncounterInput } from "@/lib/validators/encounter"
 import { validateInput } from "@/lib/utils"
+import { cancelStaleEncountersForPatient } from "@/lib/utils/encounter-helpers"
 import type { ActionResult } from "@/lib/auth/types"
 import { Encounter } from "@prisma/client"
 
@@ -32,12 +33,19 @@ export async function createEncounterAction(
   }
 
   // RULES:
-  // 1. If WAIT_TRIAGE exists, reuse it (update occurredAt to now)
+  // 0. Cancel stale encounters from previous days (auto-cleanup)
+  // 1. If same-day WAIT_TRIAGE exists, reuse it (update occurredAt to now)
   // 2. If FOR_LAB exists, mark as WAIT_DOCTOR (follow-up visit)
   // 3. If any other active encounter exists, block creation
   try {
     const result = await db.$transaction(async (tx) => {
-      // Check for existing WAIT_TRIAGE - reuse it
+      // Step 0: Cancel any stale encounters from previous days
+      // This clears WAIT_TRIAGE, TRIAGED, WAIT_DOCTOR, IN_CONSULT from previous days
+      // Registration role cancels across ALL facilities (not scoped)
+      await cancelStaleEncountersForPatient(tx, patientId, session)
+
+      // Check for existing same-day WAIT_TRIAGE - reuse it
+      // (Previous-day WAIT_TRIAGE was just cancelled above)
       const existingWaitTriage = await tx.encounter.findFirst({
         where: {
           patientId,

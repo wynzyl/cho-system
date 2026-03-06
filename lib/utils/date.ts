@@ -59,3 +59,13 @@ export function isClaimExpired(claimedAt: Date | null, expiryThreshold: Date): b
   if (!claimedAt) return true
   return claimedAt <= expiryThreshold
 }
+
+/**
+ * Checks if a date is before the start of today (midnight)
+ * Used to identify stale encounters from previous days
+ * @param date - The date to check
+ */
+export function isBeforeToday(date: Date): boolean {
+  const { today } = getTodayAndTomorrow()
+  return date < today
+}

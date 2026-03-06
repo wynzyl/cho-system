@@ -3,6 +3,7 @@
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import { validateInput } from "@/lib/utils"
+import { cancelStaleEncountersForPatient } from "@/lib/utils/encounter-helpers"
 import type { ActionResult } from "@/lib/auth/types"
 import { z } from "zod"
 
@@ -42,11 +43,18 @@ export async function createEncounterForPatientAction(
   }
 
   // RULES BEFORE ENCOUNTER (see Project_roadmap.md):
+  // 0. Cancel stale encounters from previous days at this facility (auto-cleanup)
   // 1. Do not allow a new WAIT_TRIAGE encounter if one already exists.
-  // 2. If a previous WAIT_TRIAGE encounter exists, reuse it and reschedule to now.
+  // 2. If a previous same-day WAIT_TRIAGE encounter exists, reuse it and reschedule to now.
   // 3. If a previous FOR_LAB encounter exists, mark as WAIT_DOCTOR (follow-up visit).
   try {
     const result = await db.$transaction(async (tx) => {
+      // Step 0: Cancel any stale encounters from previous days at THIS facility
+      // Triage role only cancels at current facility (scoped by facilityId)
+      await cancelStaleEncountersForPatient(tx, patientId, session, session.facilityId)
+
+      // Check for existing same-day WAIT_TRIAGE - reuse it
+      // (Previous-day WAIT_TRIAGE at this facility was just cancelled above)
       const existingWaitTriage = await tx.encounter.findFirst({
         where: {
           patientId,
