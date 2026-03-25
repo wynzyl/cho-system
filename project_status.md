@@ -1,6 +1,6 @@
 # CHO System - Project Status
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 25, 2026
 
 ## Overview
 
@@ -16,7 +16,7 @@ CHO (City Health Office) System is a medical records and clinic management syste
 | Build      | Passing                                 |
 | TypeScript | No errors                               |
 | Lint       | 9 warnings (pre-existing, non-blocking) |
-| Database   | Synced with 6 migrations                |
+| Database   | Synced with 16 migrations               |
 
 
 ---
@@ -28,7 +28,7 @@ CHO (City Health Office) System is a medical records and clinic management syste
 
 | Component                 | Status | Notes                                                       |
 | ------------------------- | ------ | ----------------------------------------------------------- |
-| Database Schema           | Done   | 20+ models, soft deletes, audit logging                     |
+| Database Schema           | Done   | 31 models, 16 migrations, soft deletes, audit logging       |
 | Prisma 7 + pg adapter     | Done   | Connection pooling configured                               |
 | Authentication            | Done   | JWT sessions, bcrypt, httpOnly cookies                      |
 | Role-Based Access Control | Done   | 6 roles: ADMIN, REGISTRATION, TRIAGE, DOCTOR, LAB, PHARMACY |
@@ -85,14 +85,18 @@ CHO (City Health Office) System is a medical records and clinic management syste
 #### 3. Doctor Consultation (DOCTOR role)
 
 
-| Feature              | Status      | Notes                                    |
-| -------------------- | ----------- | ---------------------------------------- |
-| Appointments page    | Done        | FIFO queue with claim/rollback system    |
-| FIFO claiming system | Done        | One patient per doctor, prevents jumping |
-| Patient summary view | Not Started | Triage vitals display                    |
-| Diagnosis entry      | Partial     | Taxonomy backend done, UI not started    |
-| Lab orders           | Not Started | LabOrder model exists                    |
-| Prescriptions        | Not Started | Prescription model exists                |
+| Feature              | Status | Notes                                                  |
+| -------------------- | ------ | ------------------------------------------------------ |
+| Appointments page    | Done   | FIFO queue with claim/rollback system                  |
+| FIFO claiming system | Done   | One patient per doctor, prevents jumping               |
+| Patient summary view | Done   | Triage vitals, allergies, patient snapshot             |
+| Consultation form    | Done   | 6 tabs: Snapshot, Triage, History, Exam, Assess, Plan  |
+| Diagnosis entry      | Done   | ICD-10 taxonomy integration, category/subcategory UI   |
+| Lab orders           | Done   | Create lab orders with test items                      |
+| Prescriptions        | Done   | Create prescriptions with medication items             |
+| Patient history      | Done   | View past encounters, diagnoses, prescriptions         |
+| Auto-save            | Done   | Dirty state tracking, saves on tab change              |
+| Server actions       | Done   | 17 server actions for consultation workflow            |
 
 
 #### 4. Laboratory (LAB role)
@@ -120,13 +124,13 @@ CHO (City Health Office) System is a medical records and clinic management syste
 #### 6. Admin Dashboard (ADMIN role)
 
 
-| Feature             | Status      | Notes                         |
-| ------------------- | ----------- | ----------------------------- |
-| Dashboard page      | Partial     | Route exists, needs KPI cards |
-| User management     | Partial     | Route exists, needs CRUD UI   |
-| Settings page       | Partial     | Route exists, placeholder     |
-| Facility management | Not Started | Add/edit facilities           |
-| Reports             | Not Started | Future phase                  |
+| Feature             | Status      | Notes                                            |
+| ------------------- | ----------- | ------------------------------------------------ |
+| Dashboard page      | Partial     | Route exists, needs KPI cards                    |
+| User management     | Done        | Full CRUD, role/facility assignment, pwd reset   |
+| Settings page       | Partial     | Route exists, placeholder                        |
+| Facility management | Not Started | Add/edit facilities                              |
+| Reports             | Not Started | Future phase                                     |
 
 
 ---
@@ -134,6 +138,37 @@ CHO (City Health Office) System is a medical records and clinic management syste
 ## Recently Completed
 
 ### March 2026
+
+#### Database Migration to Neon PostgreSQL (March 24)
+- Migrated database hosting to Neon PostgreSQL
+- Production-ready cloud database infrastructure
+
+#### User Management Module Complete (March 2026)
+- Full user CRUD operations
+- Role and facility assignment
+- Password reset functionality
+- User activation/deactivation
+- 7 server actions implemented
+
+#### Doctor Consultation Module Complete (March 2026)
+
+Full consultation workflow implementation:
+
+| Feature                   | Details                                                |
+| ------------------------- | ------------------------------------------------------ |
+| FIFO Queue                | Claiming system with claim/rollback                    |
+| Consultation Form         | 6 tabs: Patient Snapshot, Triage, History, Exam, Assessment, Plan |
+| Diagnosis Entry           | ICD-10 taxonomy integration with category/subcategory  |
+| Lab Orders                | Create orders with multiple test items                 |
+| Prescriptions             | Create prescriptions with medication items             |
+| Patient History           | View past encounters, diagnoses, prescriptions         |
+| Auto-save                 | Dirty state tracking, saves on tab change              |
+| Server Actions            | 17 actions for full consultation workflow              |
+
+#### Stale Encounter Cleanup (March 6)
+- Auto-cancel previous day encounters when patient returns
+- New utility functions in `lib/utils/encounter-helpers.ts`
+- Prevents stale encounters from blocking new visits
 
 #### Codebase Refactoring (March 6)
 
@@ -208,11 +243,14 @@ Implemented a 3-layer diagnosis taxonomy with ICD-10 mapping:
 
 ## Database Schema Summary
 
+**31 models across 16 migrations**
+
 ### Core Models
 
 - `Facility` - MAIN and BARANGAY health centers
 - `User` - Staff with role and facility assignment
 - `Patient` - Patient registry with Philippine-specific fields
+- `PatientAllergy` - Patient allergy records with severity
 - `Encounter` - Visit record linking patient to facility
 - `TriageRecord` - Vital signs per encounter
 
@@ -276,7 +314,7 @@ Implemented a 3-layer diagnosis taxonomy with ICD-10 mapping:
 
 - **Framework:** Next.js 16.1.6 (Turbopack)
 - **ORM:** Prisma 7.4.0
-- **Database:** PostgreSQL
+- **Database:** PostgreSQL (Neon)
 - **Node:** Latest LTS
 - **Package Manager:** npm
 
