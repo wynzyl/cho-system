@@ -8,9 +8,9 @@ import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import { ROLE_ROUTES } from "@/lib/auth/routes"
 import {
-  checkRateLimit,
-  recordFailedAttempt,
-  recordSuccessfulLogin,
+  reserveAttempt,
+  confirmAttempt,
+  rejectAttempt,
 } from "@/lib/security/rate-limiter"
 
 /**
@@ -41,13 +41,17 @@ export async function loginAction(
   if (!validation.ok) return validation.result
   const { email, password } = validation.data
 
+  // Normalize email once for consistent rate limiting and lookup
+  const normalizedEmail = email.trim().toLowerCase()
+
   // Get client IP for rate limiting
   const clientIp = await getClientIp()
 
-  // Check rate limit before any database operations
-  const rateLimitResult = checkRateLimit(clientIp, email)
-  if (!rateLimitResult.allowed) {
-    const retryMinutes = Math.ceil((rateLimitResult.retryAfterMs ?? 0) / 60000)
+  // Atomically reserve an attempt slot (prevents race conditions)
+  // This increments the counter BEFORE password verification
+  const reservation = reserveAttempt(clientIp, normalizedEmail)
+  if (!reservation.allowed) {
+    const retryMinutes = Math.ceil((reservation.retryAfterMs ?? 0) / 60000)
     return {
       ok: false,
       error: {
@@ -64,7 +68,7 @@ export async function loginAction(
   // Find user
   const user = await db.user.findFirst({
     where: {
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       isActive: true,
       deletedAt: null,
     },
@@ -75,8 +79,10 @@ export async function loginAction(
   const validPassword = await verifyPassword(password, hashToCompare)
 
   if (!user || !validPassword) {
-    // Record failed attempt for rate limiting
-    recordFailedAttempt(clientIp, email)
+    // Attempt already counted by reserveAttempt - just clean up the reservation
+    if (reservation.token) {
+      rejectAttempt(reservation.token)
+    }
 
     return {
       ok: false,
@@ -108,7 +114,9 @@ export async function loginAction(
   }
 
   // Clear rate limit records on successful login
-  recordSuccessfulLogin(clientIp, email)
+  if (reservation.token) {
+    confirmAttempt(reservation.token)
+  }
 
   // Update last login only after session is successfully created
   await db.user.update({

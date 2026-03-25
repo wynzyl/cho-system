@@ -42,23 +42,9 @@ export function isServerActionRequest(request: {
     return false
   }
 
-  // Next.js Server Actions include these headers
+  // Next.js Server Actions always include the next-action header
+  // This is the definitive indicator - content-type alone is not sufficient
+  // as regular form POSTs use the same content-types but are NOT Server Actions
   const nextAction = request.headers.get("next-action")
-  const contentType = request.headers.get("content-type")
-
-  // Check for Server Action header
-  if (nextAction) {
-    return true
-  }
-
-  // Also check for form submissions that might be Server Actions
-  if (contentType?.includes("application/x-www-form-urlencoded")) {
-    return true
-  }
-
-  if (contentType?.includes("multipart/form-data")) {
-    return true
-  }
-
-  return false
+  return !!nextAction
 }

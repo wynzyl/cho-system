@@ -3,7 +3,7 @@
  * Validates critical security-related environment variables at startup
  */
 
-const MIN_SECRET_LENGTH = 32
+export const MIN_SECRET_LENGTH = 32
 
 /**
  * Validates that SESSION_SECRET exists and meets minimum security requirements
