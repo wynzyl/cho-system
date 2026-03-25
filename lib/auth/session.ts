@@ -6,11 +6,17 @@ import { Role, UserScope } from "@prisma/client"
 
 export const SESSION_COOKIE_NAME = "cho-session"
 const SESSION_DURATION_SECONDS = 8 * 60 * 60 // 8 hours
+const MIN_SECRET_LENGTH = 32
 
 export function getSecretKey(): Uint8Array {
   const secret = process.env.SESSION_SECRET
   if (!secret) {
     throw new Error("SESSION_SECRET environment variable is not set")
+  }
+  if (secret.length < MIN_SECRET_LENGTH) {
+    throw new Error(
+      `SESSION_SECRET must be at least ${MIN_SECRET_LENGTH} characters (current: ${secret.length})`
+    )
   }
   return new TextEncoder().encode(secret)
 }

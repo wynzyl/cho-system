@@ -1,11 +1,38 @@
 "use server"
 
+import { headers } from "next/headers"
 import { db } from "@/lib/db"
 import { verifyPassword, createSession } from "@/lib/auth"
 import { loginSchema, type LoginInput } from "@/lib/validators/auth"
 import { validateInput } from "@/lib/utils"
 import type { ActionResult } from "@/lib/auth/types"
 import { ROLE_ROUTES } from "@/lib/auth/routes"
+import {
+  checkRateLimit,
+  recordFailedAttempt,
+  recordSuccessfulLogin,
+} from "@/lib/security/rate-limiter"
+
+/**
+ * Extract client IP from request headers
+ * Checks x-forwarded-for first (for proxies), then x-real-ip
+ */
+async function getClientIp(): Promise<string> {
+  const headersList = await headers()
+
+  // x-forwarded-for may contain multiple IPs, take the first (original client)
+  const forwardedFor = headersList.get("x-forwarded-for")
+  if (forwardedFor) {
+    const firstIp = forwardedFor.split(",")[0].trim()
+    if (firstIp) return firstIp
+  }
+
+  const realIp = headersList.get("x-real-ip")
+  if (realIp) return realIp
+
+  // Fallback for local development
+  return "127.0.0.1"
+}
 
 export async function loginAction(
   data: LoginInput
@@ -13,6 +40,22 @@ export async function loginAction(
   const validation = validateInput(loginSchema, data)
   if (!validation.ok) return validation.result
   const { email, password } = validation.data
+
+  // Get client IP for rate limiting
+  const clientIp = await getClientIp()
+
+  // Check rate limit before any database operations
+  const rateLimitResult = checkRateLimit(clientIp, email)
+  if (!rateLimitResult.allowed) {
+    const retryMinutes = Math.ceil((rateLimitResult.retryAfterMs ?? 0) / 60000)
+    return {
+      ok: false,
+      error: {
+        code: "RATE_LIMITED",
+        message: `Too many login attempts. Please try again in ${retryMinutes} minute${retryMinutes !== 1 ? "s" : ""}.`,
+      },
+    }
+  }
 
   // Dummy hash for timing-safe comparison when user not found
   // Generated with bcrypt.hash("dummy", 10)
@@ -32,6 +75,9 @@ export async function loginAction(
   const validPassword = await verifyPassword(password, hashToCompare)
 
   if (!user || !validPassword) {
+    // Record failed attempt for rate limiting
+    recordFailedAttempt(clientIp, email)
+
     return {
       ok: false,
       error: {
@@ -60,6 +106,9 @@ export async function loginAction(
       },
     }
   }
+
+  // Clear rate limit records on successful login
+  recordSuccessfulLogin(clientIp, email)
 
   // Update last login only after session is successfully created
   await db.user.update({
