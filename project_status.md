@@ -1,6 +1,6 @@
 # CHO System - Project Status
 
-**Last Updated:** March 25, 2026
+**Last Updated:** March 26, 2026
 
 ## Overview
 
@@ -97,6 +97,7 @@ CHO (City Health Office) System is a medical records and clinic management syste
 | Patient history      | Done   | View past encounters, diagnoses, prescriptions         |
 | Auto-save            | Done   | Dirty state tracking, saves on tab change              |
 | Server actions       | Done   | 17 server actions for consultation workflow            |
+| CITY_WIDE scope support | Done | Cross-facility patient visibility and consultation  |
 
 
 #### 4. Laboratory (LAB role)
@@ -138,6 +139,12 @@ CHO (City Health Office) System is a medical records and clinic management syste
 ## Recently Completed
 
 ### March 2026
+
+#### CITY_WIDE Scope Fix for Doctor Role (March 26)
+- CITY_WIDE doctors can now see and consult patients from ALL facilities
+- Facility name displayed in doctor queue for cross-facility visibility
+- Per-facility FIFO enforcement (not global)
+- 9 files updated with scope-aware filtering
 
 #### Database Migration to Neon PostgreSQL (March 24)
 - Migrated database hosting to Neon PostgreSQL

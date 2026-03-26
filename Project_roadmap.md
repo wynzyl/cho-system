@@ -1,6 +1,6 @@
 # CHO System - Project Roadmap
 
-**Last Updated:** March 25, 2026
+**Last Updated:** March 26, 2026
 
 ---
 
@@ -108,6 +108,12 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 - [x] Lab order actions
 - [x] Prescription actions
 - [x] Patient history actions
+
+#### 2.8 Multi-Facility Support (CITY_WIDE Scope)
+- [x] CITY_WIDE doctors see patients from ALL facilities
+- [x] Facility name displayed in doctor queue
+- [x] Per-facility FIFO enforcement
+- [x] 9 server action files updated with scope-aware filtering
 
 ---
 
