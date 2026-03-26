@@ -16,11 +16,15 @@ export async function getEncounterDetailsAction(input: {
   if (!validation.ok) return validation.result
   const data = validation.data
 
+  // CITY_WIDE doctors can view encounter details from ANY facility
+  const facilityFilter =
+    session.scope === "FACILITY_ONLY" ? { facilityId: session.facilityId } : {}
+
   const encounter = await db.encounter.findFirst({
     where: {
       id: data.encounterId,
       deletedAt: null,
-      ...(session.facilityId ? { facilityId: session.facilityId } : {}),
+      ...facilityFilter,
       patient: {
         deletedAt: null,
       },

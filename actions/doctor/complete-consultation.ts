@@ -15,12 +15,16 @@ export async function completeConsultationAction(
   if (!validation.ok) return validation.result
   const data = validation.data
 
+  // CITY_WIDE doctors can complete consultations in ANY facility
+  const facilityFilter =
+    session.scope === "FACILITY_ONLY" ? { facilityId: session.facilityId } : {}
+
   // Verify encounter exists and is in IN_CONSULT status
   const isAdmin = session.role === "ADMIN"
   const encounter = await db.encounter.findFirst({
     where: {
       id: data.encounterId,
-      facilityId: session.facilityId,
+      ...facilityFilter,
       status: "IN_CONSULT",
       // ADMIN can complete any consultation, regular doctors only their own
       ...(isAdmin ? {} : { doctorId: session.userId }),
