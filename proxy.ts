@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server"
 import { jwtVerify } from "jose"
 import { SESSION_COOKIE_NAME, getSecretKey } from "@/lib/auth/session"
 import { ROLE_ALLOWED_PATHS } from "@/lib/auth/routes"
+import { validateOrigin, isServerActionRequest } from "@/lib/security/csrf"
 
 const publicPaths = ["/login", "/"]
 
@@ -25,6 +26,16 @@ export async function proxy(request: NextRequest) {
   // Allow known static file extensions
   if (STATIC_EXTENSIONS.some((ext) => pathname.endsWith(ext))) {
     return NextResponse.next()
+  }
+
+  // CSRF Protection: Validate Origin header for Server Action requests
+  if (isServerActionRequest(request)) {
+    const origin = request.headers.get("origin")
+    const host = request.headers.get("host")
+
+    if (!validateOrigin(origin, host)) {
+      return new NextResponse("Forbidden", { status: 403 })
+    }
   }
 
   // Allow unauthorized page
