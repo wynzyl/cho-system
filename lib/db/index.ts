@@ -8,7 +8,7 @@ declare global {
   var pool: Pool | undefined
 }
 
-const pool = global.pool ?? new Pool({ connectionString: process.env.DATABASE_URL })
+const pool = global.pool ?? new Pool({ connectionString: process.env.DATABASE_URL, max: 10 })
 const adapter = new PrismaPg(pool)
 
 export const db = global.prisma ?? new PrismaClient({ adapter })

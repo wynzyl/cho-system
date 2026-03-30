@@ -161,7 +161,24 @@ export async function getEncounterForConsultAction(input: {
     },
     include: {
       patient: {
-        include: {
+        select: {
+          id: true,
+          patientCode: true,
+          firstName: true,
+          middleName: true,
+          lastName: true,
+          birthDate: true,
+          sex: true,
+          phone: true,
+          allergyStatus: true,
+          isSmoker: true,
+          smokingPackYears: true,
+          isAlcohol: true,
+          pregnancyStatus: true,
+          pregnancyWeeks: true,
+          medicalHistoryData: true,
+          familyHistoryData: true,
+          socialHistoryData: true,
           allergies: {
             where: {
               deletedAt: null,
@@ -180,12 +197,33 @@ export async function getEncounterForConsultAction(input: {
       },
       triageRecord: {
         where: { deletedAt: null },
+        select: {
+          id: true,
+          bpSystolic: true,
+          bpDiastolic: true,
+          heartRate: true,
+          respiratoryRate: true,
+          temperatureC: true,
+          spo2: true,
+          weightKg: true,
+          heightCm: true,
+          notes: true,
+          symptomOnset: true,
+          symptomDuration: true,
+          painSeverity: true,
+          associatedSymptoms: true,
+          exposureFlags: true,
+          exposureNotes: true,
+          recordedAt: true,
+        },
       },
       diagnoses: {
         where: { deletedAt: null },
         include: {
           subcategory: {
-            include: {
+            select: {
+              code: true,
+              name: true,
               icdMappings: {
                 where: { deletedAt: null, isActive: true },
                 select: {
