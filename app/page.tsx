@@ -12,7 +12,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
-      <h1 className="text-3xl font-bold mb-2">Urdaneta City Health Management and Monitoring System</h1>
+      <h1 className="text-3xl font-bold mb-2">City Health Management and Monitoring System</h1>
       <p className="text-muted-foreground mb-6">
         A comprehensive system for managing and monitoring the health of the city&apos;s residents.
       </p>
@@ -20,7 +20,7 @@ export default async function HomePage() {
         <Link href="/login">Sign In</Link>
       </Button>
       <div className="flex flex-col items-center my-6">
-       <section className="text-muted-foreground text-sm"> ©copyright 2026 Urdaneta City Health Office</section>
+       <section className="text-muted-foreground text-sm"> ©copyright 2026 City Health Office</section>
       </div>
     </div>
   )

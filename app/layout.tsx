@@ -15,8 +15,8 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Urdaneta City Health Office System",
-  description: "A multi-facility OPD workflow system for Urdaneta City Health Office",
+  title: "City Health Office System",
+  description: "A multi-facility OPD workflow system for City Health Office",
   icons: {
     icon: "/favicon.ico",
   },

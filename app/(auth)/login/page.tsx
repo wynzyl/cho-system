@@ -37,7 +37,7 @@ export default async function LoginPage() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold">CHO System</CardTitle>
+        <CardTitle className="text-2xl font-bold">CHO Monitoring System</CardTitle>
         <CardDescription>
           Enter your credentials to access the system
         </CardDescription>
