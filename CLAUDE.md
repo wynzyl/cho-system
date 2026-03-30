@@ -29,14 +29,23 @@ CHO (City Health Office) System - A medical records and clinic management system
 ## Commands
 
 ```bash
-npm run dev          # Start development server
-npm run build        # Production build
-npm run lint         # Run ESLint
-npx prisma db seed   # Seed database with test users
+npm run dev              # Start dev server (port 3005)
+npm run build            # Production build
+npm run start            # Production server (port 6600)
+npm run lint             # Run ESLint
+npm run seed:patients    # Seed patient test data
+npx prisma db seed       # Seed users and reference data
 npx prisma migrate dev --name <name>  # Create new migration
-npx prisma generate  # Regenerate Prisma client
-npx prisma db push   # Push schema changes without migration (dev only)
+npx prisma generate      # Regenerate Prisma client
 ```
+
+## Environment Setup
+
+Required environment variables:
+- `DATABASE_URL` - PostgreSQL connection string
+- `SESSION_SECRET` - Must be at least 32 characters (validated at startup)
+
+The app validates environment at startup via `instrumentation.ts`.
 
 ## Architecture
 
@@ -46,7 +55,7 @@ npx prisma db push   # Push schema changes without migration (dev only)
 - **`app/`** - Routes only (UI + navigation). No business logic.
 - **`lib/`** - Infrastructure: db/, auth/, validators/, constants/, utils/
 - **`components/`** - Reusable UI only. No DB logic. Subdirs: layout/, ui/, forms/, tables/, triage/
-- **`hooks/`** - Custom React hooks
+- **`hooks/`** - Custom React hooks (currently contains `useSession()` hook)
 
 ### Key Patterns
 
@@ -68,12 +77,38 @@ type ActionResult<T> =
   | { ok: false; error: { code: string; message: string; fieldErrors?: Record<string, string[]> } }
 ```
 
+## Key Files Reference
+
+| File | Purpose |
+|------|---------|
+| `lib/auth/session.ts` | JWT creation/verification, session caching |
+| `lib/auth/guards.ts` | Page & action protection, auth errors |
+| `lib/db/index.ts` | Prisma client with connection pooling |
+| `lib/security/rate-limiter.ts` | Login rate limiting (atomic pattern) |
+| `lib/utils/action-helpers.ts` | Error builders, audit log creation |
+| `lib/utils/encounter-helpers.ts` | Encounter lifecycle, stale logic |
+| `lib/validators/` | Zod schemas for all domains |
+| `lib/constants/enums.ts` | Centralized enum definitions |
+| `prisma/schema.prisma` | Complete data model |
+
 ## Roles & Access Control
 
 Six roles: ADMIN, REGISTRATION, TRIAGE, DOCTOR, LAB, PHARMACY
 
 - Enforce at 3 levels: route guard, server action validation, audit logging
 - UI hiding is NOT security - always validate server-side
+
+### User Scopes
+Two scopes control facility access:
+- **FACILITY_ONLY** - User can only access their assigned facility
+- **CITY_WIDE** - User can access all facilities (typically doctors, admin)
+
+Used in queries:
+```typescript
+const facilityFilter = session.scope === "FACILITY_ONLY"
+  ? { facilityId: session.facilityId }
+  : {}
+```
 
 ### Auth Guards
 ```typescript
@@ -86,10 +121,44 @@ const session = await requireSessionForAction()  // throws AuthError("UNAUTHORIZ
 const session = await requireRoleForAction(["PHARMACY"])  // throws AuthError("FORBIDDEN")
 ```
 
+### Session Management
+- JWT-based using `jose` library with HS256 algorithm
+- 8-hour expiration with httpOnly, secure, sameSite cookies
+- Payload includes: userId, role, name, facilityId, scope
+- Session verified on every action (checks user still exists and is active)
+- Uses React's `cache()` to prevent redundant DB lookups per request
+
+### Rate Limiting (Login)
+Atomic reservation pattern prevents brute force:
+- 5 attempts per 15-minute window
+- Both IP-based and email-based tracking
+- `reserveAttempt()` - Atomically check AND increment BEFORE password verification
+- `confirmAttempt(token)` - Clear on success; preserve IP to prevent reset attacks
+- Exponential backoff: 15min → 30min → 60min (capped)
+
 ## UI Design
 
 **Always invoke the frontend-design skill before writing any frontend code.**
 **Doctors' dashboard should be compact and provide easy access to patient information.**
+
+## Component Patterns
+
+### Form Components (`components/forms/`)
+- `FormField` - Label + error + required indicator wrapper
+- `FormSection` - Group-level sectioning with title
+- `FormFieldGroup` - Multiple fields in row layout
+- `VitalInput` - Specialized vital sign inputs with units
+- `YesNoToggle` - Boolean selector component
+
+### Action Helpers (`lib/utils/action-helpers.ts`)
+```typescript
+notFoundError(entity, message?)      // Standardized 404
+forbiddenError(message?)             // Access denied
+validationError(message, fieldErrors) // With field-level errors
+alreadyClaimedError(message?)        // FIFO claim conflicts
+fifoViolationError()                 // Must select first patient
+createAuditLog(tx, session, action, entity, entityId, metadata)
+```
 
 ## Database Rules
 
@@ -98,6 +167,18 @@ const session = await requireRoleForAction(["PHARMACY"])  // throws AuthError("F
 - Encounter statuses: WAIT_TRIAGE → TRIAGED → WAIT_DOCTOR → IN_CONSULT → FOR_LAB/FOR_PHARMACY → DONE
 - Stock cannot go below zero; every change creates InventoryTxn
 - All audit logs include: userId, userName, action, entity, entityId, timestamp
+
+### Encounter Lifecycle
+- **Stale Encounters**: Auto-cancelled when new encounter created if from previous day
+- **Claim System**: 30-minute expiry window for triage/doctor claims
+- **FIFO Enforcement**: Cannot skip queue; must select first patient
+- `cancelStaleEncountersForPatient()` handles auto-cancellation in transactions
+
+### Diagnosis Taxonomy (3-Layer)
+- **DiagnosisCategory** - 10 categories
+- **DiagnosisSubcategory** - 86 subcategories with notifiable/animal-bite flags
+- **DiagnosisIcdMap** - 148 ICD-10 code mappings
+- Diagnoses can be custom text OR linked to taxonomy
 
 ## Test Users (Seeded)
 
@@ -172,5 +253,4 @@ enforcement is mandatory from Day 1.
 
 #  Multi-Facility and User Role Rules
 - REGISTRATION - In the Multi-facility Patients can register in any facility.
-- TRIAGE - if the patient is already has an encounter to a facility in that day, it should restrict another encounter in other facilties. But a patient can make encounter to any facility in a day if there is no existing encounter. 
-
+- TRIAGE - if the patient is already has an encounter to a facility in that day, it should restrict another encounter in other facilties. But a patient can make encounter to any facility in a day if there is no existing encounter.
