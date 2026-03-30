@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   typescript: {ignoreBuildErrors: true},
   allowedDevOrigins: ['https://localhost:3000', 'http://cho.yamban-tech.it:3000'],
   serverExternalPackages: ['pg', 'bcrypt', '@prisma/client', '@prisma/adapter-pg'],
-  reactCompiler:true,
+  // reactCompiler:true,
   // experimental:{turbopackFileSystemCacheForBuild :true}
 };
 
