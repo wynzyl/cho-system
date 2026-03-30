@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { DoctorQueue } from "./doctor-queue"
 import { ConsultationForm } from "./consultation-form"
+import { Spinner } from "@/components/ui/spinner"
 import {
   getDoctorQueueAction,
   getEncounterForConsultAction,
@@ -220,6 +221,13 @@ export function DoctorPageClient() {
             onComplete={handleConsultationComplete}
             onEncounterUpdated={refetchEncounter}
           />
+        ) : isLoadingEncounter ? (
+          <div className="flex h-full items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <Spinner size="lg" />
+              <p className="text-sm text-muted-foreground">Loading patient data...</p>
+            </div>
+          </div>
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">
             <div className="text-center">

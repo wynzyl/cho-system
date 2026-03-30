@@ -38,7 +38,7 @@ export function AllergyBanner({
       <div
         className={cn(
           "allergy-banner-danger relative overflow-hidden rounded-lg border-2 border-red-500/30",
-          "bg-gradient-to-r from-red-950/90 via-red-900/80 to-red-950/90",
+          "bg-linear-to-r from-red-950/90 via-red-900/80 to-red-950/90",
           compact ? "px-3 py-2" : "px-4 py-3",
           className
         )}
@@ -99,7 +99,7 @@ export function AllergyBanner({
       <div
         className={cn(
           "relative overflow-hidden rounded-lg border border-emerald-500/30",
-          "bg-gradient-to-r from-emerald-950/80 via-emerald-900/60 to-emerald-950/80",
+          "bg-linear-to-r from-emerald-950/80 via-emerald-900/60 to-emerald-950/80",
           compact ? "px-3 py-2" : "px-4 py-3",
           className
         )}
@@ -125,7 +125,7 @@ export function AllergyBanner({
     <div
       className={cn(
         "relative overflow-hidden rounded-lg border border-amber-500/30",
-        "bg-gradient-to-r from-amber-950/80 via-amber-900/60 to-amber-950/80",
+        "bg-linear-to-r from-amber-950/80 via-amber-900/60 to-amber-950/80",
         compact ? "px-3 py-2" : "px-4 py-3",
         className
       )}
