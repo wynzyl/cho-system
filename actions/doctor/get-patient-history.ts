@@ -79,9 +79,12 @@ export async function getPatientHistoryAction(input: {
         where: { deletedAt: null },
         include: {
           subcategory: {
-            include: {
+            select: {
+              code: true,
+              name: true,
               icdMappings: {
                 where: { deletedAt: null, isDefault: true },
+                select: { icd10Code: true },
                 take: 1,
               },
             },
@@ -93,6 +96,10 @@ export async function getPatientHistoryAction(input: {
         include: {
           items: {
             where: { deletedAt: null },
+            select: {
+              medicineName: true,
+              dosage: true,
+            },
           },
         },
       },

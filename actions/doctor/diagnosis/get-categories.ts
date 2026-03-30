@@ -1,5 +1,6 @@
 "use server"
 
+import { unstable_cache } from "next/cache"
 import { db } from "@/lib/db"
 import { requireRoleForAction } from "@/lib/auth/guards"
 import type { ActionResult } from "@/lib/auth/types"
@@ -32,6 +33,51 @@ export type CategoryWithSubcategories = {
   subcategories?: SubcategoryOption[]
 }
 
+const getDiagnosisCategories = unstable_cache(
+  async (includeSubcategories: boolean, includeIcdMappings: boolean, activeOnly: boolean) => {
+    return db.diagnosisCategory.findMany({
+      where: activeOnly ? { isActive: true } : undefined,
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        description: true,
+        sortOrder: true,
+        subcategories: includeSubcategories
+          ? {
+              where: activeOnly ? { isActive: true } : undefined,
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                description: true,
+                isNotifiable: true,
+                isAnimalBite: true,
+                sortOrder: true,
+                icdMappings: includeIcdMappings
+                  ? {
+                      where: activeOnly ? { isActive: true } : undefined,
+                      select: {
+                        id: true,
+                        icd10Code: true,
+                        icdTitle: true,
+                        isDefault: true,
+                      },
+                      orderBy: [{ isDefault: "desc" }, { icd10Code: "asc" }],
+                    }
+                  : false,
+              },
+              orderBy: { sortOrder: "asc" },
+            }
+          : false,
+      },
+      orderBy: { sortOrder: "asc" },
+    })
+  },
+  ["diagnosis-categories"],
+  { revalidate: 86400, tags: ["diagnosis-categories"] }
+)
+
 export async function getCategoriesAction(
   input?: Partial<GetCategoriesInput>
 ): Promise<ActionResult<CategoryWithSubcategories[]>> {
@@ -50,48 +96,7 @@ export async function getCategoriesAction(
   }
 
   const { includeSubcategories, includeIcdMappings, activeOnly } = parsed.data
+  const categories = await getDiagnosisCategories(includeSubcategories, includeIcdMappings, activeOnly)
 
-  const categories = await db.diagnosisCategory.findMany({
-    where: activeOnly ? { isActive: true } : undefined,
-    select: {
-      id: true,
-      code: true,
-      name: true,
-      description: true,
-      sortOrder: true,
-      subcategories: includeSubcategories
-        ? {
-            where: activeOnly ? { isActive: true } : undefined,
-            select: {
-              id: true,
-              code: true,
-              name: true,
-              description: true,
-              isNotifiable: true,
-              isAnimalBite: true,
-              sortOrder: true,
-              icdMappings: includeIcdMappings
-                ? {
-                    where: activeOnly ? { isActive: true } : undefined,
-                    select: {
-                      id: true,
-                      icd10Code: true,
-                      icdTitle: true,
-                      isDefault: true,
-                    },
-                    orderBy: [{ isDefault: "desc" }, { icd10Code: "asc" }],
-                  }
-                : false,
-            },
-            orderBy: { sortOrder: "asc" },
-          }
-        : false,
-    },
-    orderBy: { sortOrder: "asc" },
-  })
-
-  return {
-    ok: true,
-    data: categories,
-  }
+  return { ok: true, data: categories }
 }

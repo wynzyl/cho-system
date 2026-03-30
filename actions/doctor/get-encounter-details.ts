@@ -41,14 +41,35 @@ export async function getEncounterDetailsAction(input: {
       },
       triageRecord: {
         where: { deletedAt: null },
+        select: {
+          bpSystolic: true,
+          bpDiastolic: true,
+          heartRate: true,
+          respiratoryRate: true,
+          temperatureC: true,
+          spo2: true,
+          weightKg: true,
+          heightCm: true,
+          notes: true,
+          symptomOnset: true,
+          symptomDuration: true,
+          painSeverity: true,
+          associatedSymptoms: true,
+          exposureFlags: true,
+          exposureNotes: true,
+          recordedAt: true,
+        },
       },
       diagnoses: {
         where: { deletedAt: null },
         include: {
           subcategory: {
-            include: {
+            select: {
+              code: true,
+              name: true,
               icdMappings: {
                 where: { deletedAt: null, isDefault: true },
+                select: { icd10Code: true },
                 take: 1,
               },
             },
@@ -61,6 +82,14 @@ export async function getEncounterDetailsAction(input: {
         include: {
           items: {
             where: { deletedAt: null },
+            select: {
+              medicineName: true,
+              dosage: true,
+              frequency: true,
+              duration: true,
+              quantity: true,
+              instructions: true,
+            },
           },
         },
         orderBy: { createdAt: "desc" },
@@ -68,9 +97,22 @@ export async function getEncounterDetailsAction(input: {
       labOrders: {
         where: { deletedAt: null },
         include: {
-          items: true,
+          items: {
+            select: {
+              testCode: true,
+              testName: true,
+              notes: true,
+            },
+          },
           results: {
             where: { deletedAt: null },
+            select: {
+              id: true,
+              fileUrl: true,
+              fileName: true,
+              releasedAt: true,
+              uploadedAt: true,
+            },
             orderBy: { uploadedAt: "desc" },
           },
         },

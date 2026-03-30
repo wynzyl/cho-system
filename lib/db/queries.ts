@@ -1,14 +1,19 @@
+import { unstable_cache } from "next/cache"
 import { db } from "@/lib/db"
 import type { SessionUser } from "@/lib/auth/types"
 import type { EncounterStatus } from "@prisma/client"
 import { getClaimExpiryThreshold } from "@/lib/utils/date"
 
-export async function getFacilityById(facilityId: string) {
-  return db.facility.findUnique({
-    where: { id: facilityId },
-    select: { code: true, name: true },
-  })
-}
+export const getFacilityById = unstable_cache(
+  async (facilityId: string) => {
+    return db.facility.findUnique({
+      where: { id: facilityId },
+      select: { code: true, name: true },
+    })
+  },
+  ["facility-by-id"],
+  { revalidate: 3600, tags: ["facilities"] }
+)
 
 /**
  * Options for encounter query
