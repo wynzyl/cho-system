@@ -20,11 +20,15 @@ export async function startConsultationAction(input: {
   const now = new Date()
   const expiryThreshold = getClaimExpiryThreshold(now)
 
+  // CITY_WIDE doctors can start consultations in ANY facility
+  const facilityFilter =
+    session.scope === "FACILITY_ONLY" ? { facilityId: session.facilityId } : {}
+
   // Verify encounter exists and is in WAIT_DOCTOR status
   const encounter = await db.encounter.findFirst({
     where: {
       id: data.encounterId,
-      facilityId: session.facilityId,
+      ...facilityFilter,
       status: "WAIT_DOCTOR",
       deletedAt: null,
     },

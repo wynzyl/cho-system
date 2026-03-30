@@ -108,6 +108,12 @@ export interface PatientForConsult {
   allergies: PatientAllergyForConsult[]
 }
 
+export interface FacilityForConsult {
+  id: string
+  name: string
+  code: string
+}
+
 export interface EncounterForConsult {
   id: string
   status: string
@@ -128,6 +134,7 @@ export interface EncounterForConsult {
   diagnoses: DiagnosisForConsult[]
   prescriptions: PrescriptionForConsult[]
   labOrders: LabOrderForConsult[]
+  facility: FacilityForConsult | null
 }
 
 export async function getEncounterForConsultAction(input: {
@@ -139,10 +146,14 @@ export async function getEncounterForConsultAction(input: {
   if (!validation.ok) return validation.result
   const data = validation.data
 
+  // CITY_WIDE doctors can view encounters from ANY facility
+  const facilityFilter =
+    session.scope === "FACILITY_ONLY" ? { facilityId: session.facilityId } : {}
+
   const encounter = await db.encounter.findFirst({
     where: {
       id: data.encounterId,
-      facilityId: session.facilityId,
+      ...facilityFilter,
       deletedAt: null,
       patient: {
         deletedAt: null,
@@ -219,6 +230,13 @@ export async function getEncounterForConsultAction(input: {
           },
         },
         orderBy: { requestedAt: "desc" },
+      },
+      facility: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+        },
       },
     },
   })
@@ -331,6 +349,7 @@ export async function getEncounterForConsultAction(input: {
       items: lo.items,
       requestedAt: lo.requestedAt,
     })),
+    facility: encounter.facility ?? null,
   }
 
   return { ok: true, data: result }

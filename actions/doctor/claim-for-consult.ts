@@ -19,13 +19,17 @@ export async function claimForConsultAction(input: {
   const now = new Date()
   const expiryThreshold = getClaimExpiryThreshold(now)
 
+  // CITY_WIDE doctors can claim patients from ANY facility
+  const facilityFilter =
+    session.scope === "FACILITY_ONLY" ? { facilityId: session.facilityId } : {}
+
   try {
     await db.$transaction(async (tx) => {
       const encounter = await tx.encounter.findFirst({
         where: {
           id: encounterId,
           status: "WAIT_DOCTOR",
-          facilityId: session.facilityId,
+          ...facilityFilter,
           deletedAt: null,
         },
         select: {
@@ -33,6 +37,7 @@ export async function claimForConsultAction(input: {
           claimedById: true,
           claimedAt: true,
           occurredAt: true,
+          facilityId: true,
         },
       })
 
@@ -54,9 +59,10 @@ export async function claimForConsultAction(input: {
       const { today, tomorrow } = getTodayAndTomorrow()
 
       // FIFO enforcement: verify no earlier unclaimed patients exist TODAY
+      // Use the ENCOUNTER's facilityId for per-facility FIFO (not session's facility)
       const earlierUnclaimed = await tx.encounter.findFirst({
         where: {
-          facilityId: session.facilityId,
+          facilityId: encounter.facilityId,
           status: "WAIT_DOCTOR",
           deletedAt: null,
           occurredAt: {

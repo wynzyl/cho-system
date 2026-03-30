@@ -1,6 +1,6 @@
 # CHO System - Project Roadmap
 
-**Last Updated:** March 6, 2026
+**Last Updated:** March 26, 2026
 
 ---
 
@@ -19,11 +19,11 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 | Phase | Focus | Status |
 |-------|-------|--------|
 | Phase 1 | Foundation & Patient Flow | Done |
-| Phase 2 | Doctor Consultation | In Progress |
+| Phase 2 | Doctor Consultation | Done |
 | Phase 3 | Laboratory Module | Not Started |
 | Phase 4 | Pharmacy Module | Not Started |
-| Phase 5 | Admin & Reporting | Not Started |
-| Phase 6 | Polish & Deployment | Not Started |
+| Phase 5 | Admin & Reporting | Partial |
+| Phase 6 | Polish & Deployment | Partial |
 
 ---
 
@@ -32,7 +32,7 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 ### Completed
 
 - [x] Project setup (Next.js 16, Prisma 7, PostgreSQL)
-- [x] Database schema design (20+ models)
+- [x] Database schema design (31 models, 16 migrations)
 - [x] Multi-facility architecture (MAIN + BARANGAY)
 - [x] Authentication system (JWT, bcrypt, httpOnly cookies)
 - [x] Role-based access control (6 roles)
@@ -59,45 +59,61 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 
 ---
 
-## Phase 2: Doctor Consultation (IN PROGRESS)
+## Phase 2: Doctor Consultation (DONE)
 
-### Priority: Complete Doctor Workflow
+### Completed March 2026
 
 #### 2.1 Appointments Queue
 - [x] Show TRIAGED encounters assigned to logged-in doctor
 - [x] Filter by date (Today / Upcoming / Completed)
 - [x] Encounter status badges
 - [x] FIFO claiming system with claim/rollback
-- [ ] Click to open consultation view
+- [x] Click to open consultation view
 
 #### 2.2 Consultation View
-- [ ] Patient summary panel (demographics, history)
-- [ ] Triage vitals display (read-only)
-- [ ] Chief complaint from triage
+- [x] Patient summary panel (demographics, allergies, history)
+- [x] Triage vitals display (read-only)
+- [x] Chief complaint from triage
+- [x] 6-tab consultation form (Snapshot, Triage, History, Exam, Assessment, Plan)
+- [x] Auto-save with dirty state tracking
 
 #### 2.3 Diagnosis Entry
 - [x] Diagnosis taxonomy backend (categories, subcategories, ICD-10)
-- [ ] Diagnosis picker component (searchable dropdown)
-- [ ] Support multiple diagnoses per encounter
-- [ ] Free-text diagnosis option
-- [ ] Notifiable disease alerts
+- [x] Diagnosis picker component (searchable dropdown)
+- [x] Support multiple diagnoses per encounter
+- [x] Free-text diagnosis option
+- [x] Notifiable disease alerts
+- [x] ICD-10 code integration
 
 #### 2.4 Lab Orders
-- [ ] Create lab order form
-- [ ] Select tests from catalog
-- [ ] Set performing facility (MAIN only)
-- [ ] View pending/completed lab results
+- [x] Create lab order form
+- [x] Select tests from catalog
+- [x] Set performing facility (MAIN only)
+- [x] View pending/completed lab results
 
 #### 2.5 Prescriptions
-- [ ] Create prescription form
-- [ ] Medicine autocomplete from catalog
-- [ ] Dosage, frequency, duration, quantity
-- [ ] Instructions field
-- [ ] Save prescription → encounter status FOR_PHARMACY
+- [x] Create prescription form
+- [x] Medicine autocomplete from catalog
+- [x] Dosage, frequency, duration, quantity
+- [x] Instructions field
+- [x] Save prescription → encounter status FOR_PHARMACY
 
 #### 2.6 Encounter Completion
-- [ ] Mark encounter as DONE
-- [ ] Generate encounter summary (printable)
+- [x] Mark encounter as DONE
+- [x] Encounter status workflow complete
+
+#### 2.7 Server Actions (17 total)
+- [x] Consultation CRUD actions
+- [x] Diagnosis actions
+- [x] Lab order actions
+- [x] Prescription actions
+- [x] Patient history actions
+
+#### 2.8 Multi-Facility Support (CITY_WIDE Scope)
+- [x] CITY_WIDE doctors see patients from ALL facilities
+- [x] Facility name displayed in doctor queue
+- [x] Per-facility FIFO enforcement
+- [x] 9 server action files updated with scope-aware filtering
 
 ---
 
@@ -164,12 +180,13 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 
 ### Priority: System Management
 
-#### 5.1 User Management
-- [ ] List all users with filters
-- [ ] Create user (role, facility, scope)
-- [ ] Edit user details
-- [ ] Reset password
-- [ ] Deactivate user (soft delete)
+#### 5.1 User Management (DONE)
+- [x] List all users with filters
+- [x] Create user (role, facility, scope)
+- [x] Edit user details
+- [x] Reset password
+- [x] Deactivate user (soft delete)
+- [x] 7 server actions implemented
 
 #### 5.2 Facility Management
 - [ ] List facilities
@@ -229,6 +246,7 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 #### 6.5 Deployment
 - [ ] Production build optimization
 - [ ] PM2 process management
+- [x] PostgreSQL hosting (Neon - March 24, 2026)
 - [ ] PostgreSQL backup scripts
 - [ ] File backup (lab results)
 - [ ] Monitoring setup
@@ -264,30 +282,30 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 
 ## Current Sprint Focus
 
-**Sprint Goal:** Complete Doctor Consultation Module
+**Sprint Goal:** Complete Laboratory Module
 
-### Completed This Sprint
-1. ~~Appointments queue with filtering~~ ✅
-2. ~~FIFO claiming system for doctor appointments~~ ✅
-3. ~~Allergy module (tracking, banner, NKA)~~ ✅
-4. ~~Codebase refactoring (shared utilities, reusable components)~~ ✅
+### Completed (March 2026)
+1. ~~Doctor Consultation Module~~ ✅ (Full implementation with 17 server actions)
+2. ~~User Management Module~~ ✅ (Full CRUD with 7 server actions)
+3. ~~Database Migration to Neon PostgreSQL~~ ✅
+4. ~~Stale Encounter Cleanup~~ ✅
 
-### Remaining This Sprint
-1. Consultation view with patient summary
-2. Diagnosis picker component (using taxonomy)
-3. Lab order creation form
-4. Prescription creation form
+### Current Sprint
+1. Lab queue UI (view pending orders)
+2. Lab order acceptance workflow
+3. Lab result entry and upload
+4. Lab result release
 
 ### Next Sprint
-1. Lab module - queue and processing
-2. Lab result upload and release
-3. Pharmacy dispense workflow
+1. Pharmacy dispense queue
+2. Inventory management
+3. Stock transactions
 
 ---
 
 ## Code Quality & Refactoring (DONE)
 
-### Completed March 6, 2026
+### Completed March 2026
 
 #### Shared Utilities Created
 - [x] `lib/constants/enums.ts` - Shared enum definitions for validators
@@ -310,11 +328,21 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 - [x] Standardized error handling with helper functions
 - [x] Centralized audit logging with createAuditLog helper
 
+#### Stale Encounter Cleanup
+- [x] `lib/utils/encounter-helpers.ts` - Auto-cancel previous day encounters
+- [x] Prevents stale encounters from blocking new visits
+
+#### Auto-save Implementation
+- [x] Dirty state tracking for consultation forms
+- [x] Auto-save on tab change
+- [x] Prevents data loss during consultation
+
 **Impact:**
 - ~150+ lines of duplicate code eliminated
 - 8 duplicate error patterns consolidated
 - Claim expiry logic centralized (was in 3+ files)
 - Enum definitions shared instead of duplicated
+- Stale encounter handling automated
 
 ---
 
@@ -323,11 +351,16 @@ REGISTRATION → TRIAGE → DOCTOR → LAB (optional) → PHARMACY (optional) �
 | Priority | Item | Reason | Status |
 |----------|------|--------|--------|
 | High | Doctor appointments queue | Enables doctor workflow | ✅ Done |
-| High | Doctor consultation UI | Unblocks full workflow | In Progress |
-| High | Diagnosis picker component | Taxonomy is ready | Not Started |
+| High | Doctor consultation UI | Unblocks full workflow | ✅ Done |
+| High | Diagnosis picker component | Taxonomy is ready | ✅ Done |
 | High | Codebase refactoring | Reduce duplication, improve maintainability | ✅ Done |
-| Medium | Lab order form | Enables lab workflow | Not Started |
-| Medium | Prescription form | Enables pharmacy workflow | Not Started |
+| High | Lab order form | Enables lab workflow | ✅ Done |
+| High | Prescription form | Enables pharmacy workflow | ✅ Done |
+| High | User management | Admin functionality | ✅ Done |
+| High | Lab queue UI | Process lab orders | Not Started |
+| High | Lab result workflow | Complete lab module | Not Started |
+| Medium | Pharmacy dispense queue | Complete pharmacy module | Not Started |
+| Medium | Inventory management | Stock tracking | Not Started |
 | Low | Dashboard KPIs | Admin convenience | Not Started |
 | Low | Reports | Can use direct DB queries initially | Not Started |
 
@@ -351,7 +384,7 @@ graph LR
 
 ## Success Metrics (MVP)
 
-- [ ] Complete patient flow from registration to done
+- [x] Complete patient flow from registration to done
 - [x] Multi-facility operation verified
 - [ ] Lab orders flow to MAIN and back
 - [ ] Inventory deduction accurate
@@ -359,3 +392,5 @@ graph LR
 - [x] No data loss on soft deletes
 - [x] Role permissions enforced correctly
 - [x] FIFO queue enforcement (triage and doctor)
+- [x] Doctor consultation workflow complete
+- [x] User management workflow complete

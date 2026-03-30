@@ -39,6 +39,11 @@ export interface DoctorQueueItem {
     id: string
     name: string
   } | null
+  facility: {
+    id: string
+    name: string
+    code: string
+  } | null
 }
 
 export interface DoctorQueueResponse {
@@ -55,9 +60,14 @@ export async function getDoctorQueueAction(): Promise<ActionResult<DoctorQueueRe
   // Fetch encounters that are ready for or in consultation
   // For IN_CONSULT, only show encounters assigned to current doctor (unless ADMIN)
   const isAdmin = session.role === "ADMIN"
+
+  // CITY_WIDE doctors see patients from ALL facilities
+  const facilityFilter =
+    session.scope === "FACILITY_ONLY" ? { facilityId: session.facilityId } : {}
+
   const encounters = await db.encounter.findMany({
     where: {
-      facilityId: session.facilityId,
+      ...facilityFilter,
       deletedAt: null,
       patient: {
         deletedAt: null,
@@ -114,6 +124,13 @@ export async function getDoctorQueueAction(): Promise<ActionResult<DoctorQueueRe
           name: true,
         },
       },
+      facility: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+        },
+      },
     },
     orderBy: [
       { status: "asc" }, // IN_CONSULT first alphabetically (I < W), then WAIT_DOCTOR
@@ -148,6 +165,7 @@ export async function getDoctorQueueAction(): Promise<ActionResult<DoctorQueueRe
         }
       : null,
     doctor: enc.doctor,
+    facility: enc.facility ?? null,
   }))
 
   return {

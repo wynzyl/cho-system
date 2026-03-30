@@ -1,6 +1,6 @@
 "use client"
 
-import { RefreshCw, User, Clock, AlertTriangle, Lock } from "lucide-react"
+import { RefreshCw, User, Clock, AlertTriangle, Lock, Building } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -298,6 +298,14 @@ function QueueCard({ item, isSelected, isActive, state, queuePosition, onClick }
         <span>•</span>
         <span>{patient.patientCode}</span>
       </div>
+
+      {/* Facility indicator (for CITY_WIDE doctors) */}
+      {item.facility && (
+        <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+          <Building className="h-3 w-3" />
+          <span>{item.facility.name}</span>
+        </div>
+      )}
 
       {/* Chief Complaint */}
       {chiefComplaint && (
