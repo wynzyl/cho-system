@@ -20,9 +20,9 @@ export function AppNavbar({ session, facility }: AppNavbarProps) {
         <div className="flex items-center gap-3">
           <MobileSidebar role={session.role} />
           <Link href="/">
-            <Image src="/UCHOlogo.jpg" alt="Urdaneta City Health Office System" width={32} height={32} className="rounded-full" />
+            <Image src="/UCHOlogo.jpg" alt="City Health Office System" width={32} height={32} className="rounded-full" />
           </Link>
-          <span className="font-semibold">Urdaneta City Health Management and Monitoring System</span>
+          <span className="font-semibold">City Health Management and Monitoring System</span>
         </div>
 
         <div className="hidden md:flex items-center">
